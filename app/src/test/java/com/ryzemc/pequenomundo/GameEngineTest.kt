@@ -6,6 +6,44 @@ import org.junit.Test
 
 class GameEngineTest {
     @Test
+    fun guidedRouteVisitsEveryActivityAndWraps() {
+        val route = generateSequence(GameActivity.COLORS) { it.next() }.take(7).toList()
+        assertEquals(
+            listOf(
+                GameActivity.COLORS,
+                GameActivity.SHAPES,
+                GameActivity.NUMBERS,
+                GameActivity.ANIMALS,
+                GameActivity.MEMORY,
+                GameActivity.PUZZLE,
+                GameActivity.COLORS,
+            ),
+            route,
+        )
+        for (kind in LearningKind.entries) assertEquals(kind.name, GameActivity.from(kind).name)
+    }
+
+    @Test
+    fun rewardWaitsForBothCompletionsAndAdvancesOnlyOnce() {
+        for (audioFirst in listOf(true, false)) {
+            val gate = RewardGate()
+            assertFalse(if (audioFirst) gate.audioFinished() else gate.animationFinished())
+            assertTrue(if (audioFirst) gate.animationFinished() else gate.audioFinished())
+            assertFalse(gate.audioFinished())
+            assertFalse(gate.animationFinished())
+        }
+    }
+
+    @Test
+    fun cancelledRewardNeverAdvances() {
+        val gate = RewardGate()
+        assertFalse(gate.audioFinished())
+        gate.cancel()
+        assertFalse(gate.animationFinished())
+        assertFalse(gate.audioFinished())
+    }
+
+    @Test
     fun roundsHaveOneAnswerAndRespectDifficulty() {
         for (kind in LearningKind.entries) for (count in 2..3) for (seed in 0..99) {
             val round = LearningRound.create(kind, count, Random(seed))

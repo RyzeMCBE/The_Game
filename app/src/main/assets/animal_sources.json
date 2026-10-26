@@ -1,0 +1,82 @@
+{
+  "cow": {
+    "kind": "real_field_recording",
+    "page_url": "https://bigsoundbank.com/cow-moos-s0546.html",
+    "file_url": "https://bigsoundbank.com/UPLOAD/bwf-en/0546.wav",
+    "title": "Cow Moos #1 — Free Download WAV & MP3 | BigSoundBank",
+    "author": {
+      "@type": "Person",
+      "name": "Joseph Sardin"
+    },
+    "license": "CC0-1.0",
+    "source_sha256": "a76075ae826b7a38c26ebadbdd4526ba156c1970247c89afb1d0587b73f6f4d0",
+    "processed_sha256": "95c4a2f3816040d23ba179088a9a59e4bb0aa55e21db97c8817b29ae3dcb5853",
+    "excerpt_start_seconds": 4.798,
+    "excerpt_seconds": 3.0,
+    "processing": "excerpt, resample to mono PCM 22050 Hz, level adjustment, edge fades; original animal pitch retained"
+  },
+  "dog": {
+    "kind": "real_field_recording",
+    "page_url": "https://bigsoundbank.com/barking-dog-3-s2955.html",
+    "file_url": "https://bigsoundbank.com/UPLOAD/bwf-en/2955.wav",
+    "title": "Barking dog #3 — Free Sound Effect Download | BigSoundBank",
+    "author": {
+      "@type": "Person",
+      "name": "Joseph Sardin"
+    },
+    "license": "CC0-1.0",
+    "source_sha256": "ba2a2f272997671dd68adfb01c09d975eaa38dd89e4e9463714bee5cb70836d8",
+    "processed_sha256": "ea377fb7a6a973d9545f5aa701f47ee0b48957f051312c0302d5d9c5aa5d3c58",
+    "excerpt_start_seconds": 0.0,
+    "excerpt_seconds": 2.2,
+    "processing": "excerpt, resample to mono PCM 22050 Hz, level adjustment, edge fades; original animal pitch retained"
+  },
+  "cat": {
+    "kind": "real_field_recording",
+    "page_url": "https://bigsoundbank.com/little-meow-of-a-cat-6-s1476.html",
+    "file_url": "https://bigsoundbank.com/UPLOAD/bwf-en/1476.wav",
+    "title": "Little meow of a cat #6 — Free Sound Effect Download | BigSoundBank",
+    "author": {
+      "@type": "Person",
+      "name": "Joseph Sardin"
+    },
+    "license": "CC0-1.0",
+    "source_sha256": "ae7dc252e1bf650f28627a3975abd6157a1e1859d2482f99f8384cbd50fd0591",
+    "processed_sha256": "a8ffa2d3247c129d925f87df82b6dd6059128315539900448a5d8dd11af7a8e1",
+    "excerpt_start_seconds": 0.0,
+    "excerpt_seconds": 0.723,
+    "processing": "excerpt, resample to mono PCM 22050 Hz, level adjustment, edge fades; original animal pitch retained"
+  },
+  "bird": {
+    "kind": "real_field_recording",
+    "page_url": "https://bigsoundbank.com/robin-1-s1667.html",
+    "file_url": "https://bigsoundbank.com/UPLOAD/bwf-en/1667.wav",
+    "title": "Robin #1 — Free Sound Effect Download | BigSoundBank",
+    "author": {
+      "@type": "Person",
+      "name": "Joseph Sardin"
+    },
+    "license": "CC0-1.0",
+    "source_sha256": "527d4cd5b3bff4334a976d19273866313b253960488613dc9edc6b43791d4b6b",
+    "processed_sha256": "512f08fd715bdcde814c6e0c428a1961dc5123392228bf2fe9feea2cc83cfe52",
+    "excerpt_start_seconds": 0.0,
+    "excerpt_seconds": 2.276,
+    "processing": "excerpt, resample to mono PCM 22050 Hz, level adjustment, edge fades; original animal pitch retained"
+  },
+  "duck": {
+    "kind": "real_field_recording",
+    "page_url": "https://bigsoundbank.com/ducks-s0276.html",
+    "file_url": "https://bigsoundbank.com/UPLOAD/bwf-en/0276.wav",
+    "title": "Ducks — Free Download WAV & MP3 | BigSoundBank",
+    "author": {
+      "@type": "Person",
+      "name": "Joseph Sardin"
+    },
+    "license": "CC0-1.0",
+    "source_sha256": "844c93963502b2b2d88a8fa2cb6fab5ee9790bd4b945e6d6e37eba8bc0009cb5",
+    "processed_sha256": "2c88c070868a21e814cb81c7b7dc96094662b7271512693c5466323c91a1728c",
+    "excerpt_start_seconds": 17.842,
+    "excerpt_seconds": 3.0,
+    "processing": "excerpt, resample to mono PCM 22050 Hz, level adjustment, edge fades; original animal pitch retained"
+  }
+}

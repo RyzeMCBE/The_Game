@@ -10,6 +10,49 @@ enum class LearningKind {
     ANIMALS,
 }
 
+/** The guided route advances only after an entire activity has been completed. */
+enum class GameActivity {
+    COLORS,
+    SHAPES,
+    NUMBERS,
+    ANIMALS,
+    MEMORY,
+    PUZZLE;
+
+    fun next(): GameActivity = entries[(ordinal + 1) % entries.size]
+
+    companion object {
+        fun from(kind: LearningKind): GameActivity = valueOf(kind.name)
+    }
+}
+
+/** Joins independent audio and animation completions, with exactly one transition. */
+class RewardGate {
+    private var audioDone = false
+    private var animationDone = false
+    private var closed = false
+
+    fun audioFinished(): Boolean {
+        audioDone = true
+        return consumeIfReady()
+    }
+
+    fun animationFinished(): Boolean {
+        animationDone = true
+        return consumeIfReady()
+    }
+
+    fun cancel() {
+        closed = true
+    }
+
+    private fun consumeIfReady(): Boolean {
+        if (closed || !audioDone || !animationDone) return false
+        closed = true
+        return true
+    }
+}
+
 data class LearningItem(val id: String, val label: String, val art: String, val voice: String) :
     Serializable
 

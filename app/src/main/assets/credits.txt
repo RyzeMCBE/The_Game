@@ -1,10 +1,12 @@
-Mi pequeño mundo
+Mi pequeño mundo: Noah
 
-Ilustraciones vectoriales, melodía y efectos de animales creados para esta aplicación. Los efectos son una representación sintetizada de los sonidos.
+Ilustraciones, estrella feliz animada, fuegos artificiales, melodía y sonido de celebración creados para esta aplicación.
 
-Voz sintetizada en español de México con Piper 1.3.0 y el modelo es_MX-claude-high de rhasspy/piper-voices, revisión 5041a7a49ae5b3a0f30e6837769eb03fdbb231bd. Su ficha identifica el conjunto de datos de origen con licencia Apache-2.0.
+Los sonidos de animales son grabaciones reales publicadas con licencia CC0 por BigSoundBank: vaca #0546, perro #2955, gato #1476 y pájaro #1667 de Joseph Sardin; patos #0276 de DenisChardonnet. Se han recortado, ajustado de volumen y convertido a PCM mono, conservando el tono original. Fuentes y huellas digitales: animal_sources.json.
 
-Fuente: HirCoir/Piper-TTS-Spanish en Hugging Face.
+Milo es un personaje con voz infantil sintética. Las frases se generan con Piper 1.3.0 y es_MX-claude-high, y se procesan con WORLD para modificar el registro y timbre conservando la duración. No son grabaciones de un niño real. Detalles: voice_profile.json.
+
+El modelo base pertenece a rhasspy/piper-voices, revisión 5041a7a49ae5b3a0f30e6837769eb03fdbb231bd; su ficha identifica el conjunto de datos de origen con licencia Apache-2.0.
 https://huggingface.co/spaces/HirCoir/Piper-TTS-Spanish
 
-Las grabaciones están incluidas en el APK. El modelo de voz y el sintetizador no forman parte de la aplicación.
+Todos los audios están incluidos en el APK. Los modelos y herramientas de síntesis no forman parte de la aplicación.

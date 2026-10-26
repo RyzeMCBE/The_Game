@@ -36,9 +36,9 @@ jobs:
         run: |
           python3 tools/check_assets.py --apk app/build/outputs/apk/debug/app-debug.apk
           mkdir -p deliverables
-          cp app/build/outputs/apk/debug/app-debug.apk deliverables/mi-pequeno-mundo-1.0.0.apk
+          cp app/build/outputs/apk/debug/app-debug.apk deliverables/mi-pequeno-mundo-noah-1.1.0-test.apk
           cd deliverables
-          sha256sum mi-pequeno-mundo-1.0.0.apk > SHA256SUMS.txt
+          sha256sum mi-pequeno-mundo-noah-1.1.0-test.apk > SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         with:
           name: mi-pequeno-mundo-apk
@@ -62,6 +62,7 @@ jobs:
             adb shell svc wifi disable
             adb shell svc data disable
             ./gradlew --no-daemon connectedDebugAndroidTest
+            adb pull /sdcard/Android/data/com.ryzemc.pequenomundo.noah/files/qa app/build/device-screenshots
       - name: Upload verification reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -71,3 +72,4 @@ jobs:
             app/build/reports/tests/
             app/build/reports/androidTests/
             app/build/outputs/androidTest-results/
+            app/build/device-screenshots/

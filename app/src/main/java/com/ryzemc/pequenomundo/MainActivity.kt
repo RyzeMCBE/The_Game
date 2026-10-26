@@ -30,6 +30,7 @@ class MainActivity : Activity() {
     private lateinit var audio: AudioController
     private lateinit var clock: PlayClock
     private lateinit var root: LinearLayout
+    private lateinit var stage: FrameLayout
     private lateinit var body: LinearLayout
     private val handler = Handler(Looper.getMainLooper())
     private var foreground = false
@@ -44,6 +45,11 @@ class MainActivity : Activity() {
     private var selectedDrawing: String? = null
     private var saving = false
     private var galleryPage = 0
+    private var pendingReward: GameActivity? = null
+    private var rewardVoice: String? = null
+    private var rewardOverlay: FrameLayout? = null
+    private var rewardAnimation: CelebrationView? = null
+    private var rewardGate: RewardGate? = null
 
     private data class Retained(
         val painting: Painting?,
@@ -86,7 +92,16 @@ class MainActivity : Activity() {
                 setBackgroundColor(Palette.background)
                 if (Build.VERSION.SDK_INT >= 29) isForceDarkAllowed = false
             }
-        setContentView(root)
+        stage =
+            FrameLayout(this).apply { if (Build.VERSION.SDK_INT >= 29) isForceDarkAllowed = false }
+        stage.addView(
+            root,
+            FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT,
+            ),
+        )
+        setContentView(stage)
         if (Build.VERSION.SDK_INT >= 33)
             onBackInvokedDispatcher.registerOnBackInvokedCallback(
                 OnBackInvokedDispatcher.PRIORITY_DEFAULT
@@ -133,7 +148,7 @@ class MainActivity : Activity() {
         audio.resume()
         if (screen != "parent" && screen != "break") clock.resume(SystemClock.elapsedRealtime())
         handler.post(ticker)
-        audio.say(*promptKeys)
+        if (pendingReward != null) startCelebration() else audio.say(*promptKeys)
     }
 
     override fun onPause() {
@@ -142,12 +157,14 @@ class MainActivity : Activity() {
         clock.pause(SystemClock.elapsedRealtime())
         store.elapsed = clock.elapsed(SystemClock.elapsedRealtime())
         painting?.let(store::saveDraft)
+        cancelCelebration(clearPending = false)
         audio.pause()
         super.onPause()
     }
 
     override fun onDestroy() {
         handler.removeCallbacksAndMessages(null)
+        cancelCelebration(clearPending = false)
         audio.pause()
         store.close()
         super.onDestroy()
@@ -172,6 +189,10 @@ class MainActivity : Activity() {
     }
 
     private fun navigateBack() {
+        if (rewardOverlay != null) {
+            showHome()
+            return
+        }
         when (screen) {
             "home" -> finish()
             "learning" -> showLearn()
@@ -284,6 +305,7 @@ class MainActivity : Activity() {
     }
 
     private fun shell(route: String, title: String, subtitle: String = "") {
+        cancelCelebration()
         if (screen == "paint") painting?.let(store::saveDraft)
         screen = route
         generation++
@@ -299,7 +321,7 @@ class MainActivity : Activity() {
                 setPadding(0, dp(10), 0, dp(4))
             }
         header.addView(
-            text("Mi pequeño mundo", 19f, bold = true).apply { gravity = Gravity.CENTER_VERTICAL },
+            text("El mundo de Noah", 19f, bold = true).apply { gravity = Gravity.CENTER_VERTICAL },
             LinearLayout.LayoutParams(0, dp(56), 1f),
         )
         header.addView(
@@ -434,8 +456,8 @@ class MainActivity : Activity() {
         val words =
             LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
-                addFull(text("¡Vamos a descubrir!", 30f, bold = true))
-                addFull(text("¿Qué quieres hacer hoy?", 17f, Palette.muted))
+                addFull(text("¡Hola, Noah!", 30f, bold = true))
+                addFull(text("¿A qué jugamos hoy?", 17f, Palette.muted))
             }
         hero.addView(words, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         hero.addView(
@@ -474,9 +496,7 @@ class MainActivity : Activity() {
         body.addFull(button("Mis dibujos", "gallery", Palette.sky) { showGallery() })
         body.gap(12)
         body.addFull(
-            text("Soy Milo. Vamos pasito a pasito.", 16f, Palette.muted).apply {
-                gravity = Gravity.CENTER
-            }
+            text("Soy Milo. ¡Vamos, Noah!", 16f, Palette.muted).apply { gravity = Gravity.CENTER }
         )
         prompt("welcome")
     }
@@ -548,6 +568,7 @@ class MainActivity : Activity() {
                 LearningKind.ANIMALS -> "¿Qué animal escuchas?"
             }
         shell("learning", question)
+        body.tag = "screen_learning_${kind.name.lowercase()}"
         val art = if (kind == LearningKind.NUMBERS) "apples_${round.target.id}" else "bear"
         body.addFull(
             ArtView(
@@ -571,9 +592,6 @@ class MainActivity : Activity() {
                     gravity = Gravity.CENTER
                     accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
                 }
-        val next =
-            button("Otra aventura", "next", Palette.mint) { showLearning(kind, true) }
-                .apply { visibility = if (round.completed) View.VISIBLE else View.GONE }
         val choices =
             round.options.map { item ->
                 val tile =
@@ -597,16 +615,15 @@ class MainActivity : Activity() {
                         if (round.completed) return@clickable
                         if (round.answer(item.id)) {
                             store.record(kind.name.lowercase())
-                            feedback.text = "¡Lo descubriste! Una estrella para ti."
+                            feedback.text = "¡Muy bien, Noah! Una estrella para ti."
                             tile.background = rounded(Palette.mint)
-                            next.visibility = View.VISIBLE
                             body.findViewWithTag<View>("answers")?.let { group ->
                                 if (group is ViewGroup)
                                     for (i in 0 until group.childCount) group
                                         .getChildAt(i)
                                         .isEnabled = false
                             }
-                            audio.say(item.voice, "praise_${Random.nextInt(1,4)}")
+                            celebrate(GameActivity.from(kind), item.voice)
                         } else {
                             feedback.text = "Probemos otra vez, despacito."
                             audio.say("try_again")
@@ -618,12 +635,12 @@ class MainActivity : Activity() {
         body.gap(18)
         body.addFull(feedback)
         body.gap(12)
-        body.addFull(next)
         when (kind) {
             LearningKind.NUMBERS -> prompt("numbers_help")
             LearningKind.ANIMALS -> prompt("ask_${round.target.id}", "sound_${round.target.id}")
             else -> prompt("ask_${round.target.id}")
         }
+        if (round.completed) celebrate(GameActivity.from(kind), round.target.voice)
     }
 
     private fun showMemory(fresh: Boolean) {
@@ -643,9 +660,6 @@ class MainActivity : Activity() {
                     tag = "feedback"
                     accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
                 }
-        val next =
-            button("Jugar otra vez", "next", Palette.mint) { showMemory(true) }
-                .apply { visibility = if (game.finished) View.VISIBLE else View.GONE }
         val cards = mutableListOf<LinearLayout>()
         fun refresh() {
             cards.forEachIndexed { index, tile ->
@@ -699,7 +713,7 @@ class MainActivity : Activity() {
                     clickable(tile, Palette.lilac) {
                         when (game.tap(index)) {
                             MemoryResult.REVEALED -> {
-                                audio.say(game.cards[index])
+                                audio.say(game.cards[index], "sound_${game.cards[index]}")
                             }
                             MemoryResult.MATCH -> {
                                 feedback.text = "¡Encontraste una pareja!"
@@ -713,8 +727,7 @@ class MainActivity : Activity() {
                             MemoryResult.FINISHED -> {
                                 store.record("memory")
                                 feedback.text = "¡Encontraste todas las parejas!"
-                                next.visibility = View.VISIBLE
-                                audio.say("finished")
+                                celebrate(GameActivity.MEMORY)
                             }
                             else -> Unit
                         }
@@ -726,10 +739,10 @@ class MainActivity : Activity() {
         }
         body.addFull(feedback)
         body.gap()
-        body.addFull(next)
         refresh()
         if (game.waiting) concealLater()
         prompt("memory_help")
+        if (game.finished) celebrate(GameActivity.MEMORY)
     }
 
     private fun showPuzzle(fresh: Boolean) {
@@ -741,19 +754,134 @@ class MainActivity : Activity() {
                 )
         val game = puzzle!!
         shell("puzzle", "Arma el dibujo")
-        val next =
-            button("Otro rompecabezas", "next", Palette.mint) { showPuzzle(true) }
-                .apply { visibility = if (game.finished) View.VISIBLE else View.GONE }
         body.addFull(
             PuzzlePanel(this, game, audio) {
                 store.record("puzzle")
-                next.visibility = View.VISIBLE
-                audio.say("finished")
+                celebrate(GameActivity.PUZZLE)
             }
         )
         body.gap()
-        body.addFull(next)
         prompt("puzzle_help")
+        if (game.finished) celebrate(GameActivity.PUZZLE)
+    }
+
+    private fun showGame(activity: GameActivity) {
+        when (activity) {
+            GameActivity.MEMORY -> showMemory(true)
+            GameActivity.PUZZLE -> showPuzzle(true)
+            else -> showLearning(LearningKind.valueOf(activity.name), true)
+        }
+    }
+
+    private fun celebrate(activity: GameActivity, answerVoice: String? = null) {
+        if (pendingReward == activity && rewardOverlay != null) return
+        pendingReward = activity
+        rewardVoice = answerVoice
+        if (foreground) startCelebration()
+    }
+
+    private fun startCelebration() {
+        val activity = pendingReward ?: return
+        val compact = resources.configuration.screenHeightDp < 500
+        cancelCelebration(clearPending = false)
+        val token = generation
+        val overlay =
+            FrameLayout(this).apply {
+                tag = "celebration"
+                isClickable = true
+                setBackgroundColor(Palette.background)
+                setPadding(root.paddingLeft, root.paddingTop, root.paddingRight, root.paddingBottom)
+            }
+        val art = CelebrationView(this)
+        overlay.addView(
+            art,
+            FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT,
+            ),
+        )
+        val heading =
+            text("¡Muy bien, Noah!", if (compact) 24f else 29f, Palette.green, true).apply {
+                tag = "celebration_title"
+                gravity = Gravity.CENTER
+                accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
+            }
+        overlay.addView(
+            heading,
+            FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    Gravity.TOP or Gravity.CENTER_HORIZONTAL,
+                )
+                .apply { topMargin = dp(if (compact) 14 else 84) },
+        )
+        overlay.addView(
+            text("Una estrellita para ti", 19f, Palette.ink).apply { gravity = Gravity.CENTER },
+            FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    Gravity.TOP or Gravity.CENTER_HORIZONTAL,
+                )
+                .apply { topMargin = dp(if (compact) 52 else 132) },
+        )
+        overlay.addView(
+            text("¡Seguimos jugando!", 19f, Palette.muted).apply { gravity = Gravity.CENTER },
+            FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL,
+                )
+                .apply { bottomMargin = dp(if (compact) 8 else 32) },
+        )
+        overlay.addView(
+            button("Inicio", "celebration_home", Palette.mint) { showHome() },
+            FrameLayout.LayoutParams(dp(92), dp(52), Gravity.TOP or Gravity.START).apply {
+                topMargin = dp(12)
+            },
+        )
+        root.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+        stage.addView(
+            overlay,
+            FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT,
+            ),
+        )
+        rewardOverlay = overlay
+        rewardAnimation = art
+        val gate = RewardGate()
+        rewardGate = gate
+        fun active() =
+            foreground &&
+                generation == token &&
+                rewardOverlay === overlay &&
+                pendingReward == activity
+        fun proceed(ready: Boolean) {
+            if (ready && active()) showGame(activity.next())
+        }
+        fun presentStar() {
+            if (!active()) return
+            art.start { if (active()) proceed(gate.animationFinished()) }
+            audio.say("praise_3", onFinished = { if (active()) proceed(gate.audioFinished()) })
+            audio.playCelebrationChime()
+        }
+        val answer = rewardVoice
+        if (answer == null) presentStar() else audio.say(answer, onFinished = { presentStar() })
+    }
+
+    private fun cancelCelebration(clearPending: Boolean = true) {
+        rewardAnimation?.cancel()
+        rewardGate?.cancel()
+        rewardGate = null
+        audio.stopEffect()
+        rewardAnimation = null
+        rewardOverlay?.let { stage.removeView(it) }
+        rewardOverlay = null
+        root.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_AUTO
+        if (clearPending) {
+            pendingReward = null
+            rewardVoice = null
+        }
     }
 
     private fun showPaint() {
