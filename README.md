@@ -13,7 +13,7 @@ Aplicación **Android nativa en Kotlin**, para jugar, pintar y descubrir con un 
 - Indicaciones habladas, repetición de instrucciones y mensajes amables para volver a intentar.
 - Zona de adultos protegida por una suma, con voz, música opcional, dificultad, progreso y recordatorio de descanso a los 5, 10, 15 o 20 minutos. El reloj solo cuenta tiempo de juego en primer plano.
 
-Los datos se guardan en el almacenamiento privado de la aplicación. No se solicitan permisos de internet, micrófono ni acceso al almacenamiento compartido. Desinstalar Android borra los datos de esta aplicación.
+Los datos se guardan en el almacenamiento privado de la aplicación. No se solicitan permisos de internet, micrófono ni acceso al almacenamiento compartido. Al desinstalar la aplicación, Android borra sus datos.
 
 ## Instalar
 

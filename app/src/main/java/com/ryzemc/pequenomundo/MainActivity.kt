@@ -84,6 +84,7 @@ class MainActivity : Activity() {
             LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 setBackgroundColor(Palette.background)
+                if (Build.VERSION.SDK_INT >= 29) isForceDarkAllowed = false
             }
         setContentView(root)
         if (Build.VERSION.SDK_INT >= 33)
@@ -362,7 +363,7 @@ class MainActivity : Activity() {
         )
         scroll.addView(
             frame,
-            ScrollView.LayoutParams(
+            FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT,
             ),
