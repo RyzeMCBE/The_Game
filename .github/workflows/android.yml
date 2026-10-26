@@ -62,7 +62,7 @@ jobs:
             adb shell svc wifi disable
             adb shell svc data disable
             ./gradlew --no-daemon connectedDebugAndroidTest
-            adb pull /sdcard/Android/data/com.ryzemc.pequenomundo.noah/files/qa app/build/device-screenshots
+            adb pull /data/local/tmp/noah-qa app/build/device-screenshots || true
       - name: Upload verification reports
         if: always()
         uses: actions/upload-artifact@v4

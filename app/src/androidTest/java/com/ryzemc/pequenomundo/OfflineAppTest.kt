@@ -2,7 +2,6 @@ package com.ryzemc.pequenomundo
 
 import android.content.Context
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
 import android.media.MediaMetadataRetriever
 import android.os.SystemClock
 import android.view.View
@@ -80,13 +79,15 @@ class OfflineAppTest {
     }
 
     private fun capture(name: String) {
+        require(name.matches(Regex("[a-z0-9-]+")))
         instrumentation.waitForIdleSync()
-        val bitmap = instrumentation.uiAutomation.takeScreenshot() ?: return
-        val folder = File(context.getExternalFilesDir(null), "qa").apply { mkdirs() }
-        File(folder, "$name.png").outputStream().use {
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
+        fun shell(command: String) {
+            val output = instrumentation.uiAutomation.executeShellCommand(command)
+            android.os.ParcelFileDescriptor.AutoCloseInputStream(output).use { it.readBytes() }
         }
-        bitmap.recycle()
+        // UTP can uninstall the app after the suite; keep QA images outside its data directory.
+        shell("mkdir -p /data/local/tmp/noah-qa")
+        shell("screencap -p /data/local/tmp/noah-qa/$name.png")
     }
 
     @Test
