@@ -55,6 +55,34 @@ PHRASES = {
     "duck": "¡Sí! Es el pato.",
 }
 
+# Additional offline instructions for the 1.2 edition.
+PHRASES.update({
+    "album_help": "Noah, elige un dibujo para pintar. Hay muchas hojas para ti.",
+    "border_help": "Pinta con tu dedo, Noah. Te ayudo a cuidar los bordes.",
+    "count_touch": "Noah, toca las manzanas una por una. Vamos a contar.",
+    "count_feed": "Vamos a darle manzanas a Milo. Escucha cuántas necesita.",
+    "count_match": "Noah, cuenta las manzanas y elige el número.",
+    "shadow_help": "Noah, busca la sombra de este animal.",
+    "ask_big": "Noah, toca el animal grande.",
+    "ask_small": "Noah, toca el animal pequeño.",
+    "sorting_help": "Toca una pieza y después la cesta que le corresponde.",
+    "paths_help": "Noah, empieza en el círculo y sigue el camino con tu dedo.",
+    "animal_explore": "Noah, toca un animal para escuchar su nombre y su sonido.",
+    "pink": "Rosa.", "lightblue": "Celeste.", "white": "Blanco.",
+    "black": "Negro.", "gray": "Gris.",
+})
+for key, label in {"orange":"naranja","brown":"marrón","pink":"rosa","lightblue":"celeste","white":"blanco","black":"negro","gray":"gris"}.items():
+    PHRASES["ask_"+key] = "Busca el color " + label + "."
+for key, label in {"pig":"el cerdo","sheep":"la oveja","goat":"la cabra","horse":"el caballo","hen":"la gallina","lion":"el león","elephant":"el elefante","monkey":"el mono","frog":"la rana","owl":"el búho"}.items():
+    PHRASES[key] = "¡Sí! Es " + label + "."
+    PHRASES["ask_"+key] = "¿Qué animal escuchas?"
+NUMBERS = ["uno", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve", "diez"]
+for n, name in enumerate(NUMBERS, 1):
+    PHRASES["count_"+str(n)] = name.capitalize() + "."
+    amount = "una manzana" if n==1 else name+" manzanas"
+    PHRASES["total_"+str(n)] = "Hay " + amount + ". ¡Muy bien, Noah!"
+    PHRASES["give_"+str(n)] = "Noah, dale " + amount + " a Milo."
+
 
 def write_wave(name, samples, rate=22050):
     pcm = array.array("h", (int(max(-1, min(1, x)) * 28000) for x in samples))
@@ -118,16 +146,22 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", type=Path, required=True)
     parser.add_argument("--sample-only", action="store_true")
+    parser.add_argument("--incremental", action="store_true", help="Keep unchanged committed clips and their measurements")
     args = parser.parse_args()
     from piper import PiperVoice, SynthesisConfig
     AUDIO.mkdir(parents=True, exist_ok=True)
     voice = PiperVoice.load(str(args.model))
     config = SynthesisConfig(length_scale=1.12, noise_scale=.6, noise_w_scale=.7, volume=.85)
     analysis = {}
+    previous = {}
+    if args.incremental and (AUDIO.parent / "narration.json").exists():
+        previous = json.loads((AUDIO.parent / "narration.json").read_text())
+        analysis = json.loads((AUDIO.parent / "voice_profile.json").read_text())["clips"]
     with tempfile.TemporaryDirectory(prefix="noah-voice-") as tmp:
         source = Path(tmp) / "source.wav"
         for key, text in PHRASES.items():
             if args.sample_only and key != "welcome": continue
+            if args.incremental and previous.get(key)==text and key in analysis and (AUDIO/(key+".wav")).exists(): continue
             print("Recording child character:", key, flush=True)
             with wave.open(str(source), "wb") as output: voice.synthesize_wav(text, output, syn_config=config)
             analysis[key] = child_character(source, AUDIO / (key + ".wav"))

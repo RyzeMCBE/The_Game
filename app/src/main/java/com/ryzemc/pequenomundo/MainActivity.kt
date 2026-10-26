@@ -50,12 +50,26 @@ class MainActivity : Activity() {
     private var rewardOverlay: FrameLayout? = null
     private var rewardAnimation: CelebrationView? = null
     private var rewardGate: RewardGate? = null
+    private var counting: CountingRound? = null
+    private var countingPanel: CountingPanel? = null
+    private var discovery: DiscoveryRound? = null
+    private var sorting: SortingRound? = null
+    private var tracing: TracingGame? = null
+    private var albumCategory = "all"
+    private var albumPage = 0
+    private var chosenColor = "green"
+    private var chosenBrush = 20f
+    private var erasing = false
 
     private data class Retained(
         val painting: Painting?,
         val learning: LearningRound?,
         val memory: MemoryGame?,
         val puzzle: PuzzleGame?,
+        val counting: CountingRound?,
+        val discovery: DiscoveryRound?,
+        val sorting: SortingRound?,
+        val tracing: TracingGame?,
     )
 
     private val ticker =
@@ -74,6 +88,7 @@ class MainActivity : Activity() {
 
     override fun onCreate(state: Bundle?) {
         super.onCreate(state)
+        DrawingCatalog.load(this)
         store = LocalStore(this)
         audio = AudioController(this, store)
         clock = PlayClock(store.elapsed)
@@ -85,11 +100,24 @@ class MainActivity : Activity() {
         memory = retained?.memory ?: state?.getSerializable("memory") as? MemoryGame
         @Suppress("DEPRECATION")
         puzzle = retained?.puzzle ?: state?.getSerializable("puzzle") as? PuzzleGame
+        @Suppress("DEPRECATION")
+        counting = retained?.counting ?: state?.getSerializable("counting") as? CountingRound
+        @Suppress("DEPRECATION")
+        discovery = retained?.discovery ?: state?.getSerializable("discovery") as? DiscoveryRound
+        @Suppress("DEPRECATION")
+        sorting = retained?.sorting ?: state?.getSerializable("sorting") as? SortingRound
+        @Suppress("DEPRECATION")
+        tracing = retained?.tracing ?: state?.getSerializable("tracing") as? TracingGame
+        albumCategory = state?.getString("album_category") ?: "all"
+        albumPage = state?.getInt("album_page") ?: 0
+        chosenColor = state?.getString("paint_color")?.takeIf { it in Palette.colors } ?: "green"
+        chosenBrush = state?.getFloat("paint_brush", 20f) ?: 20f
+        erasing = state?.getBoolean("paint_eraser") ?: false
         selectedDrawing = state?.getString("drawing")
         root =
             LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
-                setBackgroundColor(Palette.background)
+                background = StorybookBackground()
                 if (Build.VERSION.SDK_INT >= 29) isForceDarkAllowed = false
             }
         stage =
@@ -130,6 +158,13 @@ class MainActivity : Activity() {
         // Parent access is deliberately not restored after rotation/process recreation.
         when (state?.getString("screen")) {
             "paint" -> showPaint()
+            "album" -> showAlbum()
+            "count_menu" -> showCountingMenu()
+            "counting" -> showCounting(false)
+            "discovery" -> showDiscovery(discovery?.activity ?: GameActivity.SHADOWS, false)
+            "sorting" -> showSorting(false)
+            "paths" -> showPaths(false)
+            "animal_explore" -> showAnimalExplore()
             "play" -> showPlay()
             "learn" -> showLearn()
             "learning" -> learning?.let { showLearning(it.kind, false) } ?: showLearn()
@@ -140,12 +175,15 @@ class MainActivity : Activity() {
             "break" -> showBreak()
             else -> showHome()
         }
+        if (state?.getString("pending_reward") == GameActivity.PAINTING.name && screen == "paint")
+            celebrate(GameActivity.PAINTING)
     }
 
     override fun onResume() {
         super.onResume()
         foreground = true
         audio.resume()
+        countingPanel?.resumeInteraction()
         if (screen != "parent" && screen != "break") clock.resume(SystemClock.elapsedRealtime())
         handler.post(ticker)
         if (pendingReward != null) startCelebration() else audio.say(*promptKeys)
@@ -176,12 +214,22 @@ class MainActivity : Activity() {
         out.putSerializable("memory", memory)
         out.putSerializable("puzzle", puzzle)
         out.putString("drawing", selectedDrawing)
+        out.putSerializable("counting", counting)
+        out.putSerializable("discovery", discovery)
+        out.putSerializable("sorting", sorting)
+        out.putSerializable("tracing", tracing)
+        out.putString("album_category", albumCategory)
+        out.putInt("album_page", albumPage)
+        out.putString("paint_color", chosenColor)
+        out.putFloat("paint_brush", chosenBrush)
+        out.putBoolean("paint_eraser", erasing)
+        out.putString("pending_reward", pendingReward?.name)
         super.onSaveInstanceState(out)
     }
 
     @Deprecated("Activity retained data is used only for the small native screen state")
     override fun onRetainNonConfigurationInstance(): Any =
-        Retained(painting, learning, memory, puzzle)
+        Retained(painting, learning, memory, puzzle, counting, discovery, sorting, tracing)
 
     @Deprecated("Android back dispatch delegates here on supported Android versions")
     override fun onBackPressed() {
@@ -195,6 +243,13 @@ class MainActivity : Activity() {
         }
         when (screen) {
             "home" -> finish()
+            "paint" -> showAlbum()
+            "counting" -> showCountingMenu()
+            "count_menu",
+            "animal_explore" -> showLearn()
+            "discovery",
+            "sorting",
+            "paths" -> showPlay()
             "learning" -> showLearn()
             "memory",
             "puzzle" -> showPlay()
@@ -215,6 +270,7 @@ class MainActivity : Activity() {
         GradientDrawable().apply {
             setColor(fill)
             cornerRadius = dp(radius).toFloat()
+            setStroke(dp(1), 0x1881a8b2)
         }
 
     private fun clickable(view: View, fill: Int = Color.WHITE, action: () -> Unit): View {
@@ -310,6 +366,7 @@ class MainActivity : Activity() {
         screen = route
         generation++
         paintView = null
+        countingPanel = null
         root.removeAllViews()
         val now = SystemClock.elapsedRealtime()
         if (route == "parent" || route == "break") clock.pause(now)
@@ -318,42 +375,38 @@ class MainActivity : Activity() {
             LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
-                setPadding(0, dp(10), 0, dp(4))
-            }
-        header.addView(
-            text("El mundo de Noah", 19f, bold = true).apply { gravity = Gravity.CENTER_VERTICAL },
-            LinearLayout.LayoutParams(0, dp(56), 1f),
-        )
-        header.addView(
-            button("Familia", "family", Palette.mint) { gate { showParent() } },
-            LinearLayout.LayoutParams(dp(84), dp(48)),
-        )
-        root.addFull(header)
-        val nav =
-            LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
-                setPadding(0, dp(4), 0, dp(8))
+                setPadding(0, dp(6), 0, dp(8))
             }
         if (route != "home")
-            nav.addView(
-                button("Inicio", "home") {
-                    if (screen == "break")
-                        gate {
-                            clock.reset(SystemClock.elapsedRealtime())
-                            store.elapsed = 0
-                            showHome()
-                        }
-                    else showHome()
-                },
-                LinearLayout.LayoutParams(dp(80), dp(48)),
+            header.addView(
+                button("Inicio", "home", Palette.sky) {
+                        if (screen == "break")
+                            gate {
+                                clock.reset(SystemClock.elapsedRealtime())
+                                store.elapsed = 0
+                                showHome()
+                            }
+                        else showHome()
+                    }
+                    .apply { textSize = 14f },
+                LinearLayout.LayoutParams(dp(67), dp(48)),
             )
-        nav.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f))
-        nav.addView(
-            button("Escuchar a Milo", "repeat", Palette.sky) { audio.say(*promptKeys) },
-            LinearLayout.LayoutParams(dp(170), dp(48)),
+        header.addView(
+            text(if (route == "home") "El mundo de Noah" else "Noah y Milo", 18f, bold = true)
+                .apply { gravity = Gravity.CENTER },
+            LinearLayout.LayoutParams(0, dp(54), 1f),
         )
-        root.addFull(nav)
+        header.addView(
+            button("♪", "repeat", Palette.sky) { audio.say(*promptKeys) }
+                .apply { contentDescription = "Escuchar a Milo" },
+            LinearLayout.LayoutParams(dp(48), dp(48)),
+        )
+        header.addView(
+            button("Familia", "family", Palette.mint) { gate { showParent() } }
+                .apply { textSize = 14f },
+            LinearLayout.LayoutParams(dp(73), dp(48)).apply { leftMargin = dp(6) },
+        )
+        root.addFull(header)
         val scroll =
             ScrollView(this).apply {
                 isFillViewport = true
@@ -447,30 +500,34 @@ class MainActivity : Activity() {
     private fun showHome() {
         shell("home", "", "")
         val hero =
-            LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
+            FrameLayout(this).apply {
                 background = rounded(Palette.sky)
-                setPadding(dp(16), dp(10), dp(12), dp(10))
+                clipToOutline = true
+                addView(
+                    MiloHeroView(this@MainActivity),
+                    FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(158)),
+                )
+                addView(
+                    LinearLayout(this@MainActivity).apply {
+                        orientation = LinearLayout.VERTICAL
+                        gravity = Gravity.CENTER_VERTICAL
+                        setPadding(dp(18), 0, 0, 0)
+                        addFull(text("¡Hola, Noah!", 29f, bold = true))
+                        addFull(text("¿A qué jugamos hoy?", 16f, Palette.muted))
+                    },
+                    FrameLayout.LayoutParams(
+                        dp((resources.configuration.screenWidthDp * .58f).toInt()),
+                        dp(158),
+                    ),
+                )
             }
-        val words =
-            LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                addFull(text("¡Hola, Noah!", 30f, bold = true))
-                addFull(text("¿A qué jugamos hoy?", 17f, Palette.muted))
-            }
-        hero.addView(words, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-        hero.addView(
-            ArtView(this, "bear", "Milo, el osito"),
-            LinearLayout.LayoutParams(dp(98), dp(110)),
-        )
         body.addFull(hero)
         body.gap(16)
         val wide = resources.configuration.screenWidthDp >= 650
         val choices =
             listOf(
                 card("Pintar", "Mi taller de colores", "paint", Palette.peach, "paint", wide) {
-                    showPaint()
+                    showAlbum()
                 },
                 card("Jugar", "Formas, parejas y piezas", "play", Palette.lilac, "play", wide) {
                     showPlay()
@@ -526,6 +583,37 @@ class MainActivity : Activity() {
                 showPuzzle(true)
             }
         )
+        body.gap()
+        listOf(
+                Triple(GameActivity.SHADOWS, "Encuentra la sombra", "cat"),
+                Triple(GameActivity.SIZES, "Grande y pequeño", "elephant"),
+                Triple(GameActivity.SORTING, "Cada cosa en su cesta", "play"),
+                Triple(GameActivity.PATHS, "Caminos mágicos", "duck"),
+            )
+            .forEach { (activity, title, art) ->
+                body.addFull(
+                    card(
+                        title,
+                        when (activity) {
+                            GameActivity.SHADOWS -> "Une el animal con su silueta"
+                            GameActivity.SIZES -> "Descubre los tamaños"
+                            GameActivity.SORTING -> "Toca una pieza y su cesta"
+                            else -> "Sigue el camino con tu dedo"
+                        },
+                        art,
+                        when (activity) {
+                            GameActivity.SHADOWS -> Palette.sky
+                            GameActivity.SIZES -> Palette.peach
+                            GameActivity.SORTING -> Palette.mint
+                            else -> Palette.lilac
+                        },
+                        activity.name.lowercase(),
+                    ) {
+                        showGame(activity)
+                    }
+                )
+                body.gap()
+            }
         prompt("games_help")
     }
 
@@ -538,8 +626,20 @@ class MainActivity : Activity() {
         )
         body.gap()
         body.addFull(
-            card("Números", "Contamos del 1 al 5", "apple", Palette.mint, "numbers") {
-                showLearning(LearningKind.NUMBERS, true)
+            card("Contamos con Milo", "Tres juegos del 1 al 10", "apple", Palette.mint, "numbers") {
+                showCountingMenu()
+            }
+        )
+        body.gap()
+        body.addFull(
+            card(
+                "Conoce los animales",
+                "15 amigos con sonidos reales",
+                "elephant",
+                Palette.sky,
+                "animal_explore",
+            ) {
+                showAnimalExplore()
             }
         )
         body.gap()
@@ -552,6 +652,10 @@ class MainActivity : Activity() {
     }
 
     private fun showLearning(kind: LearningKind, fresh: Boolean) {
+        if (kind == LearningKind.NUMBERS) {
+            showCounting(fresh)
+            return
+        }
         if (fresh || learning?.kind != kind)
             learning =
                 LearningRound.create(
@@ -769,6 +873,16 @@ class MainActivity : Activity() {
         when (activity) {
             GameActivity.MEMORY -> showMemory(true)
             GameActivity.PUZZLE -> showPuzzle(true)
+            GameActivity.NUMBERS -> showCounting(true)
+            GameActivity.SHADOWS,
+            GameActivity.SIZES -> showDiscovery(activity, true)
+            GameActivity.SORTING -> showSorting(true)
+            GameActivity.PATHS -> showPaths(true)
+            GameActivity.PAINTING -> {
+                painting = Painting(store.nextDrawing())
+                store.saveDraft(painting!!)
+                showPaint()
+            }
             else -> showLearning(LearningKind.valueOf(activity.name), true)
         }
     }
@@ -884,196 +998,509 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun showAlbum() {
+        if (painting == null) painting = store.readDraft()
+        shell(
+            "album",
+            "Mi álbum para pintar",
+            "${DrawingCatalog.pages.size} dibujos para ti, Noah.",
+        )
+        val filters = listOf("all" to "Todos") + DrawingCatalog.categories
+        val bar = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        filters.forEach { (id, label) ->
+            bar.addView(
+                button(
+                        label,
+                        "category_$id",
+                        if (id == albumCategory) Palette.mint else Color.WHITE,
+                    ) {
+                        albumCategory = id
+                        albumPage = 0
+                        showAlbum()
+                    }
+                    .apply { textSize = 15f },
+                LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(50)).apply {
+                    rightMargin = dp(8)
+                },
+            )
+        }
+        body.addFull(
+            HorizontalScrollView(this).apply {
+                isHorizontalScrollBarEnabled = false
+                addView(bar)
+            }
+        )
+        body.gap()
+        body.addFull(
+            button("¡Una sorpresa para pintar!", "surprise_drawing", Palette.peach) {
+                openSheet(store.nextDrawing(), register = false)
+            }
+        )
+        val draft = painting!!
+        if (draft.marks.isNotEmpty()) {
+            body.gap(8)
+            body.addFull(
+                button("Continuar mi dibujo", "continue_paint", Palette.sky) { showPaint() }
+            )
+        }
+        body.gap()
+        val pages =
+            store.drawingOrder().mapNotNull(DrawingCatalog::find).filter {
+                albumCategory == "all" || it.category == albumCategory
+            }
+        albumPage = albumPage.coerceIn(0, ((pages.size - 1).coerceAtLeast(0)) / 12)
+        pages.drop(albumPage * 12).take(12).chunked(2).forEach { entries ->
+            val cards =
+                entries.map { sheet ->
+                    LinearLayout(this).apply {
+                        orientation = LinearLayout.VERTICAL
+                        gravity = Gravity.CENTER
+                        setPadding(dp(6), dp(8), dp(6), dp(8))
+                        tag = "sheet_${sheet.id}"
+                        contentDescription = "Pintar ${sheet.name}"
+                        addFull(SheetView(this@MainActivity, sheet), 116)
+                        addFull(
+                            text(sheet.name, 17f, bold = true).apply {
+                                gravity = Gravity.CENTER
+                                maxLines = 2
+                            }
+                        )
+                        clickable(this, Color.WHITE) { openSheet(sheet.id) }
+                        elevation = dp(2).toFloat()
+                    }
+                }
+            body.addFull(columns(cards), 172)
+            body.gap()
+        }
+        val navigation = mutableListOf<View>()
+        if (albumPage > 0)
+            navigation.add(
+                button("Anteriores", "album_previous") {
+                    albumPage--
+                    showAlbum()
+                }
+            )
+        if ((albumPage + 1) * 12 < pages.size)
+            navigation.add(
+                button("Más dibujos", "album_more", Palette.sky) {
+                    albumPage++
+                    showAlbum()
+                }
+            )
+        if (navigation.isNotEmpty()) body.addFull(columns(navigation))
+        body.gap()
+        body.addFull(
+            button("Hoja en blanco", "blank_page", Palette.mint) {
+                openSheet("blank", register = false)
+            }
+        )
+        body.gap(8)
+        body.addFull(button("Mis pinturas guardadas", "gallery", Palette.lilac) { showGallery() })
+        prompt("album_help")
+    }
+
+    private fun openSheet(id: String, register: Boolean = true) {
+        painting?.let(store::saveDraft)
+        if (register && DrawingCatalog.find(id) != null) store.chooseDrawing(id)
+        painting = store.readSheetDraft(id)
+        erasing = false
+        showPaint()
+    }
+
+    /** The painting workspace never contains the album, a spinner or other sheets. */
     private fun showPaint() {
         if (painting == null) painting = store.readDraft()
-        shell("paint", "Mi taller de colores", "Pinta con tu dedo y hazlo a tu manera.")
-        val canvas = PaintCanvasView(this, painting!!)
-        paintView = canvas
-        canvas.tool = if (painting!!.template == "blank") "brush" else "fill"
-        canvas.onChanged = {
-            painting = canvas.painting
-            store.saveDraft(canvas.painting)
-        }
-        val templates = listOf("Hoja libre", "Casita", "Flor", "Osito", "Pez")
-        val chooser =
-            Spinner(this).apply {
-                tag = "templates"
-                contentDescription = "Elegir dibujo"
-                adapter =
-                    ArrayAdapter(
-                        this@MainActivity,
-                        android.R.layout.simple_spinner_dropdown_item,
-                        templates,
-                    )
-                setSelection(Painting.templates.indexOf(canvas.painting.template))
-            }
-        body.addFull(chooser, 52)
-        body.gap(8)
-        body.addFull(canvas)
-        body.gap(12)
-        val palette =
+        shell("paint", "")
+        root.removeAllViews()
+        body =
             LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
-                gravity = Gravity.CENTER
+                tag = "screen_paint"
+                setPadding(0, dp(4), 0, dp(6))
             }
-        val selections = mutableListOf<TextView>()
-        Palette.colors.entries.chunked(4).forEach { entries ->
-            val line =
-                LinearLayout(this).apply {
-                    orientation = LinearLayout.HORIZONTAL
-                    gravity = Gravity.CENTER
+        root.addView(
+            body,
+            LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT,
+            ),
+        )
+        val heading =
+            LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+            }
+        heading.addView(
+            button("Álbum", "album_back", Palette.sky) { showAlbum() }.apply { textSize = 15f },
+            LinearLayout.LayoutParams(dp(76), dp(48)),
+        )
+        heading.addView(
+            text("¡A pintar, Noah!", 21f, bold = true).apply { gravity = Gravity.CENTER },
+            LinearLayout.LayoutParams(0, dp(48), 1f),
+        )
+        heading.addView(
+            button("♪", "repeat", Palette.peach) { audio.say(*promptKeys) }
+                .apply { contentDescription = "Escuchar a Milo" },
+            LinearLayout.LayoutParams(dp(48), dp(48)),
+        )
+        body.addFull(heading, 52)
+        val canvas =
+            PaintCanvasView(this, painting!!).apply {
+                paintColor = Palette.colors.getValue(chosenColor)
+                brushSize = chosenBrush
+                tool = if (erasing) "eraser" else "brush"
+                onChanged = {
+                    painting = this.painting
+                    store.saveDraft(this.painting)
                 }
-            entries.forEach { (name, color) ->
-                val swatch =
-                    FrameLayout(this).apply {
-                        contentDescription =
-                            when (name) {
-                                "red" -> "Rojo"
-                                "yellow" -> "Amarillo"
-                                "blue" -> "Azul"
-                                "green" -> "Verde"
-                                "purple" -> "Morado"
-                                "orange" -> "Naranja"
-                                else -> "Marrón"
-                            }
-                        tag = "paint_$name"
-                        background = rounded(color, 50)
-                        minimumHeight = dp(48)
-                    }
-                val mark = text("", 20f, Palette.ink, true).apply { gravity = Gravity.CENTER }
-                swatch.addView(
-                    mark,
+                background = rounded(Color.WHITE, 22)
+                clipToOutline = true
+            }
+        paintView = canvas
+        val workspace =
+            LinearLayout(this).apply {
+                orientation =
+                    if (
+                        resources.configuration.screenWidthDp >
+                            resources.configuration.screenHeightDp
+                    )
+                        LinearLayout.HORIZONTAL
+                    else LinearLayout.VERTICAL
+            }
+        body.addView(
+            workspace,
+            LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f),
+        )
+        val landscape = workspace.orientation == LinearLayout.HORIZONTAL
+        val paper =
+            FrameLayout(this).apply {
+                background = rounded(Color.WHITE, 22)
+                elevation = dp(2).toFloat()
+                addView(
+                    canvas,
                     FrameLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.MATCH_PARENT,
                     ),
                 )
-                selections.add(mark)
-                clickable(swatch, color) {
-                    canvas.paintColor = color
-                    selections.forEach { it.text = "" }
-                    mark.text = "•"
-                    audio.say(name)
-                }
-                line.addView(
-                    swatch,
-                    LinearLayout.LayoutParams(0, dp(48), 1f).apply {
-                        if (line.childCount > 0) leftMargin = dp(8)
-                    },
-                )
-                if (name == "red") mark.text = "•"
             }
-            palette.addFull(line)
-            palette.gap(8)
+        workspace.addView(
+            paper,
+            if (landscape)
+                LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f).apply {
+                    rightMargin = dp(10)
+                }
+            else
+                LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f).apply {
+                    bottomMargin = dp(8)
+                },
+        )
+        val controls = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        val swatches = mutableMapOf<String, FrameLayout>()
+        fun refreshColors() {
+            swatches.forEach { (key, v) ->
+                v.background =
+                    GradientDrawable().apply {
+                        shape = GradientDrawable.OVAL
+                        setColor(Palette.colors.getValue(key))
+                        setStroke(
+                            dp(if (key == chosenColor && !erasing) 4 else 1),
+                            if (key == chosenColor && !erasing) Palette.ink else 0x6696a2af,
+                        )
+                    }
+                (v.getChildAt(0) as TextView).text = if (key == chosenColor && !erasing) "✓" else ""
+                v.isSelected = key == chosenColor && !erasing
+            }
         }
-        body.addFull(palette)
-        body.gap(4)
-        val toolLabel =
-            text(
-                    if (canvas.tool == "fill") "Toca una zona para colorear."
-                    else "Pincel grueso: pinta con el dedo.",
-                    16f,
-                    Palette.muted,
-                )
-                .apply { gravity = Gravity.CENTER }
-        body.addFull(
-            columns(
-                listOf(
-                    button("Pincel", "brush") {
-                        canvas.tool = "brush"
-                        toolLabel.text = "Pincel grueso: pinta con el dedo."
-                        audio.say("paint_help")
-                    },
-                    button("Rellenar", "fill") {
-                        canvas.tool = "fill"
-                        toolLabel.text = "Toca una zona para colorear."
-                        audio.say("fill_help")
-                    },
-                    button("Sellos", "stamps") {
-                        canvas.tool = "stamp"
-                        toolLabel.text = "Toca tu hoja para poner un sello."
-                        audio.say("stamp_help")
-                    },
-                )
-            )
-        )
-        body.gap(8)
-        body.addFull(toolLabel)
-        val stamps =
-            listOf("star", "flower", "bear").map { art ->
-                ArtView(this, art).apply {
-                    contentDescription =
-                        when (art) {
-                            "star" -> "Sello de estrella"
-                            "flower" -> "Sello de flor"
-                            else -> "Sello de osito"
+        Palette.colors.entries.chunked(if (landscape) 3 else 6).forEach { entries ->
+            val row =
+                entries.map { (key, color) ->
+                    FrameLayout(this).apply {
+                        tag = "paint_$key"
+                        contentDescription = GameContent.colors.first { it.id == key }.label
+                        isClickable = true
+                        isFocusable = true
+                        val light =
+                            Color.red(color) * .299 +
+                                Color.green(color) * .587 +
+                                Color.blue(color) * .114 > 155
+                        addView(
+                            text("", 25f, if (light) Palette.ink else Color.WHITE, true).apply {
+                                gravity = Gravity.CENTER
+                            },
+                            FrameLayout.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                            ),
+                        )
+                        setOnClickListener {
+                            chosenColor = key
+                            erasing = false
+                            canvas.paintColor = color
+                            canvas.tool = "brush"
+                            refreshColors()
+                            audio.say(key)
                         }
-                    clickable(this, Palette.sky) {
-                        canvas.tool = "stamp"
-                        canvas.stamp = art
-                        toolLabel.text = "Toca tu hoja para poner un sello."
-                        audio.say("stamp_help")
+                        swatches[key] = this
                     }
                 }
+            controls.addFull(columns(row, 48))
+            controls.gap(5)
+        }
+        refreshColors()
+        val brushButtons = mutableListOf<Button>()
+        fun refreshBrush() {
+            brushButtons.forEachIndexed { i, v ->
+                v.background =
+                    rounded(
+                        if (listOf(10f, 20f, 34f)[i] == chosenBrush && !erasing) Palette.mint
+                        else Color.WHITE,
+                        18,
+                    )
             }
-        body.gap(8)
-        body.addFull(columns(stamps, 54))
-        body.gap(12)
-        body.addFull(
-            columns(
+        }
+        val tools =
+            listOf(10f, 20f, 34f).mapIndexed { index, size ->
+                button("●", "brush_$index") {
+                        chosenBrush = size
+                        erasing = false
+                        canvas.brushSize = size
+                        canvas.tool = "brush"
+                        refreshBrush()
+                        refreshColors()
+                    }
+                    .apply {
+                        textSize = listOf(13f, 20f, 27f)[index]
+                        contentDescription =
+                            listOf("Pincel fino", "Pincel mediano", "Pincel grueso")[index]
+                        brushButtons.add(this)
+                    }
+            } +
                 listOf(
-                    button("Deshacer", "undo") { canvas.undo() },
-                    button("Guardar dibujo", "save", Palette.mint) { savePicture(canvas) },
+                    button("Borrar", "eraser") {
+                            erasing = true
+                            canvas.tool = "eraser"
+                            refreshColors()
+                            refreshBrush()
+                        }
+                        .apply {
+                            textSize = 12f
+                            contentDescription = "Borrador"
+                        },
+                    button("↶", "undo") { canvas.undo() }
+                        .apply {
+                            textSize = 27f
+                            contentDescription = "Deshacer último trazo"
+                        },
                 )
-            )
-        )
-        body.gap(10)
-        body.addFull(button("Ver mis dibujos", "gallery", Palette.sky) { showGallery() })
-        chooser.onItemSelectedListener =
-            object : AdapterView.OnItemSelectedListener {
-                override fun onNothingSelected(parent: AdapterView<*>?) = Unit
-
-                override fun onItemSelected(
-                    parent: AdapterView<*>?,
-                    view: View?,
-                    position: Int,
-                    id: Long,
-                ) {
-                    val template = Painting.templates[position]
-                    if (template != canvas.painting.template) {
-                        if (canvas.painting.marks.isNotEmpty()) savePicture(canvas, true)
-                        canvas.changeTemplate(template)
-                        painting = canvas.painting
-                        toolLabel.text =
-                            if (template == "blank") "Pincel grueso: pinta con el dedo."
-                            else "Toca una zona para colorear."
-                        audio.say(if (template == "blank") "paint_help" else "fill_help")
-                    }
-                }
+        if (landscape)
+            tools.chunked(3).forEach {
+                controls.addFull(columns(it, 48))
+                controls.gap(5)
             }
-        prompt(if (canvas.tool == "fill") "fill_help" else "paint_help")
+        else controls.addFull(columns(tools, 48))
+        refreshBrush()
+        controls.gap(6)
+        controls.addFull(button("¡Terminé!", "save", Palette.mint) { finishPainting(canvas) }, 52)
+        if (landscape)
+            workspace.addView(
+                ScrollView(this).apply {
+                    isVerticalScrollBarEnabled = false
+                    addView(controls)
+                },
+                LinearLayout.LayoutParams(dp(172), ViewGroup.LayoutParams.MATCH_PARENT),
+            )
+        else workspace.addFull(controls)
+        prompt(if (painting!!.template == "blank") "paint_help" else "border_help")
     }
 
-    private fun savePicture(canvas: PaintCanvasView, silent: Boolean = false) {
-        if (saving && !silent) return
-        if (!silent) {
-            saving = true
-            body.findViewWithTag<View>("save")?.isEnabled = false
-        }
+    private fun finishPainting(canvas: PaintCanvasView) {
+        if (saving) return
+        saving = true
+        val token = generation
+        body.findViewWithTag<View>("save")?.isEnabled = false
+        store.saveDraft(canvas.painting)
         store.savePicture(canvas.bitmap()) pictureSaved@{ success ->
-            if (!silent) saving = false
-            if (isDestroyed || isFinishing) return@pictureSaved
-            if (!silent) {
-                body.findViewWithTag<View>("save")?.isEnabled = true
-                Toast.makeText(
-                        this,
-                        if (success) "Dibujo guardado" else "No se pudo guardar. Intenta otra vez.",
-                        Toast.LENGTH_SHORT,
-                    )
+            saving = false
+            if (isDestroyed || isFinishing || token != generation || screen != "paint")
+                return@pictureSaved
+            body.findViewWithTag<View>("save")?.isEnabled = true
+            if (success) {
+                store.record("painting")
+                celebrate(GameActivity.PAINTING)
+            } else {
+                Toast.makeText(this, "No se pudo guardar. Intenta otra vez.", Toast.LENGTH_SHORT)
                     .show()
-                if (screen == "paint") audio.say(if (success) "saved" else "save_error")
+                audio.say("save_error")
             }
         }
+    }
+
+    private fun showCountingMenu() {
+        shell("count_menu", "Contamos con Milo", "Toca, reparte y descubre del 1 al 10.")
+        body.addFull(text("Elegimos cuántos contar", 18f, bold = true))
+        body.gap(8)
+        body.addFull(
+            columns(
+                listOf(3, 5, 10).map { maximum ->
+                    button(
+                        "1–$maximum",
+                        "range_$maximum",
+                        if (store.countMaximum == maximum) Palette.mint else Color.WHITE,
+                    ) {
+                        store.countRange = maximum
+                        showCountingMenu()
+                    }
+                }
+            )
+        )
+        body.gap()
+        listOf(
+                Triple(CountingMode.TOUCH, "Cuenta tocando", "Toca las manzanas una por una"),
+                Triple(CountingMode.FEED, "Dale de comer a Milo", "Pon la cantidad que te pida"),
+                Triple(CountingMode.MATCH, "Encuentra el número", "Cuenta y elige el número"),
+            )
+            .forEach { (mode, title, description) ->
+                body.addFull(
+                    card(
+                        title,
+                        description,
+                        if (mode == CountingMode.FEED) "bear" else "apple",
+                        if (mode == CountingMode.FEED) Palette.peach else Palette.sky,
+                        "count_mode_${mode.name.lowercase()}",
+                    ) {
+                        showCounting(true, mode)
+                    }
+                )
+                body.gap()
+            }
+        body.addFull(
+            button("Avanzar a mi ritmo", "range_auto", Palette.lilac) {
+                store.countRange = 0
+                showCountingMenu()
+            }
+        )
+        prompt("count_touch")
+    }
+
+    private fun showCounting(fresh: Boolean, mode: CountingMode? = null) {
+        if (fresh || counting == null)
+            counting =
+                CountingRound.create(
+                    mode ?: CountingMode.entries[store.successes("numbers") % 3],
+                    store.countMaximum,
+                    store.difficulty,
+                    previous = counting?.target,
+                )
+        val game = counting!!
+        shell(
+            "counting",
+            when (game.mode) {
+                CountingMode.TOUCH -> "Vamos a contar, Noah"
+                CountingMode.FEED -> "${game.target} manzanas para Milo"
+                CountingMode.MATCH -> "¿Cuántas manzanas hay?"
+            },
+        )
+        val panel =
+            CountingPanel(this, game, audio) {
+                store.record("numbers")
+                celebrate(GameActivity.NUMBERS, "total_${game.target}")
+            }
+        panel.tag = "count_panel"
+        countingPanel = panel
+        body.addFull(panel)
+        when (game.mode) {
+            CountingMode.TOUCH -> prompt("count_touch")
+            CountingMode.FEED -> prompt("give_${game.target}")
+            CountingMode.MATCH -> prompt("count_match")
+        }
+        if (game.completed) celebrate(GameActivity.NUMBERS, "total_${game.target}")
+    }
+
+    private fun showDiscovery(activity: GameActivity, fresh: Boolean) {
+        if (fresh || discovery?.activity != activity) discovery = DiscoveryRound.create(activity)
+        val game = discovery!!
+        shell(
+            "discovery",
+            if (activity == GameActivity.SHADOWS) "Encuentra su sombra"
+            else if (game.target == "big") "Toca el animal grande" else "Toca el animal pequeño",
+        )
+        body.tag = "screen_${activity.name.lowercase()}"
+        body.addFull(
+            DiscoveryPanel(this, game, audio) {
+                    store.record(activity.name.lowercase())
+                    celebrate(activity)
+                }
+                .apply { tag = "discovery_panel" }
+        )
+        prompt(if (activity == GameActivity.SHADOWS) "shadow_help" else "ask_${game.target}")
+        if (game.completed) celebrate(activity)
+    }
+
+    private fun showSorting(fresh: Boolean) {
+        if (fresh || sorting == null)
+            sorting = SortingRound.create(store.successes("sorting") % 2 == 1)
+        val game = sorting!!
+        shell(
+            "sorting",
+            "Cada cosa en su cesta",
+            if (game.byShape) "Vamos a ordenar las formas" else "Vamos a ordenar los colores",
+        )
+        body.addFull(
+            SortingPanel(this, game, audio) {
+                    store.record("sorting")
+                    celebrate(GameActivity.SORTING)
+                }
+                .apply { tag = "sorting_panel" }
+        )
+        prompt("sorting_help")
+        if (game.completed) celebrate(GameActivity.SORTING)
+    }
+
+    private fun showPaths(fresh: Boolean) {
+        if (fresh || tracing == null) tracing = TracingGame(store.successes("paths") % 4)
+        val game = tracing!!
+        shell("paths", "Caminos mágicos", "Ayuda al patito siguiendo el camino.")
+        val token = generation
+        body.addFull(
+            FingerPathView(this, game) {
+                if (generation == token) {
+                    store.record("paths")
+                    celebrate(GameActivity.PATHS)
+                }
+            }
+        )
+        body.gap()
+        body.addFull(
+            text("Empieza en el círculo verde", 18f, Palette.green, true).apply {
+                gravity = Gravity.CENTER
+            }
+        )
+        prompt("paths_help")
+        if (game.completed) celebrate(GameActivity.PATHS)
+    }
+
+    private fun showAnimalExplore() {
+        shell("animal_explore", "Mis amigos animales", "Toca un amigo y escucha su sonido.")
+        GameContent.animals.chunked(3).forEach { items ->
+            val cards =
+                items.map { item ->
+                    LinearLayout(this).apply {
+                        orientation = LinearLayout.VERTICAL
+                        gravity = Gravity.CENTER
+                        tag = "explore_${item.id}"
+                        contentDescription = "Escuchar ${item.label}"
+                        addFull(ArtView(this@MainActivity, item.art), 90)
+                        addFull(
+                            text(item.label, 17f, bold = true).apply { gravity = Gravity.CENTER }
+                        )
+                        clickable(this, Color.WHITE) { audio.say(item.voice, "sound_${item.id}") }
+                    }
+                }
+            body.addFull(columns(cards), 137)
+            body.gap()
+        }
+        prompt("animal_explore")
     }
 
     private fun showGallery() {
@@ -1087,7 +1514,7 @@ class MainActivity : Activity() {
                 }
             )
             body.gap()
-            body.addFull(button("Vamos a pintar", "paint", Palette.peach) { showPaint() })
+            body.addFull(button("Vamos a pintar", "paint", Palette.peach) { showAlbum() })
         } else {
             galleryPage = galleryPage.coerceIn(0, (files.size - 1) / 12)
             files.drop(galleryPage * 12).take(12).forEach { file ->
@@ -1298,6 +1725,11 @@ class MainActivity : Activity() {
                 "Animales" to "animals",
                 "Parejas" to "memory",
                 "Rompecabezas" to "puzzle",
+                "Sombras" to "shadows",
+                "Tamaños" to "sizes",
+                "Clasificar" to "sorting",
+                "Caminos" to "paths",
+                "Pinturas" to "painting",
             )
             .forEach { (label, key) ->
                 body.addFull(
@@ -1313,6 +1745,25 @@ class MainActivity : Activity() {
             text("Sus dibujos y avances se guardan en este dispositivo.", 16f, Palette.muted)
         )
         body.gap(16)
+        body.addFull(
+            button("Créditos de dibujos y sonidos", "credits", Palette.sky) {
+                val content = assets.open("credits.txt").bufferedReader().use { it.readText() }
+                AlertDialog.Builder(this)
+                    .setTitle("Créditos")
+                    .setView(
+                        ScrollView(this).apply {
+                            addView(
+                                text(content, 15f).apply {
+                                    setPadding(dp(20), dp(12), dp(20), dp(12))
+                                }
+                            )
+                        }
+                    )
+                    .setPositiveButton("Cerrar", null)
+                    .show()
+            }
+        )
+        body.gap(12)
         body.addFull(
             button("Empezar una nueva sesión", "new_session", Palette.mint) {
                 clock.reset(SystemClock.elapsedRealtime())

@@ -281,6 +281,371 @@
       "source_median_hz": 186.36,
       "target_median_hz": 280,
       "pitch_ratio": 1.5025
+    },
+    "album_help": {
+      "source_median_hz": 207.39,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.3501
+    },
+    "border_help": {
+      "source_median_hz": 174.2,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.6073
+    },
+    "count_touch": {
+      "source_median_hz": 185.09,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.5128
+    },
+    "count_feed": {
+      "source_median_hz": 186.19,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.5039
+    },
+    "count_match": {
+      "source_median_hz": 176.04,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.5905
+    },
+    "shadow_help": {
+      "source_median_hz": 175.0,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.6
+    },
+    "ask_big": {
+      "source_median_hz": 181.15,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.5457
+    },
+    "ask_small": {
+      "source_median_hz": 174.11,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.6082
+    },
+    "sorting_help": {
+      "source_median_hz": 171.11,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.6363
+    },
+    "paths_help": {
+      "source_median_hz": 198.15,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.4131
+    },
+    "animal_explore": {
+      "source_median_hz": 174.9,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.6009
+    },
+    "pink": {
+      "source_median_hz": 191.09,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.4653
+    },
+    "lightblue": {
+      "source_median_hz": 186.6,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.5005
+    },
+    "white": {
+      "source_median_hz": 191.69,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.4607
+    },
+    "black": {
+      "source_median_hz": 172.77,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.6207
+    },
+    "gray": {
+      "source_median_hz": 205.62,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.3617
+    },
+    "ask_orange": {
+      "source_median_hz": 179.89,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.5565
+    },
+    "ask_brown": {
+      "source_median_hz": 194.49,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.4397
+    },
+    "ask_pink": {
+      "source_median_hz": 182.19,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.5369
+    },
+    "ask_lightblue": {
+      "source_median_hz": 180.11,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.5546
+    },
+    "ask_white": {
+      "source_median_hz": 182.17,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.537
+    },
+    "ask_black": {
+      "source_median_hz": 186.58,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.5007
+    },
+    "ask_gray": {
+      "source_median_hz": 187.46,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.4937
+    },
+    "pig": {
+      "source_median_hz": 180.37,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.5524
+    },
+    "ask_pig": {
+      "source_median_hz": 183.97,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.522
+    },
+    "sheep": {
+      "source_median_hz": 174.52,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.6044
+    },
+    "ask_sheep": {
+      "source_median_hz": 182.11,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.5375
+    },
+    "goat": {
+      "source_median_hz": 178.75,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.5664
+    },
+    "ask_goat": {
+      "source_median_hz": 182.0,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.5385
+    },
+    "horse": {
+      "source_median_hz": 175.91,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.5917
+    },
+    "ask_horse": {
+      "source_median_hz": 183.38,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.5269
+    },
+    "hen": {
+      "source_median_hz": 170.43,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.6429
+    },
+    "ask_hen": {
+      "source_median_hz": 181.58,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.542
+    },
+    "lion": {
+      "source_median_hz": 177.49,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.5776
+    },
+    "ask_lion": {
+      "source_median_hz": 180.95,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.5474
+    },
+    "elephant": {
+      "source_median_hz": 179.25,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.562
+    },
+    "ask_elephant": {
+      "source_median_hz": 182.17,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.537
+    },
+    "monkey": {
+      "source_median_hz": 195.68,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.4309
+    },
+    "ask_monkey": {
+      "source_median_hz": 181.73,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.5408
+    },
+    "frog": {
+      "source_median_hz": 166.95,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.6771
+    },
+    "ask_frog": {
+      "source_median_hz": 184.07,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.5212
+    },
+    "owl": {
+      "source_median_hz": 191.35,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.4633
+    },
+    "ask_owl": {
+      "source_median_hz": 181.87,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.5396
+    },
+    "count_1": {
+      "source_median_hz": 207.54,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.3491
+    },
+    "total_1": {
+      "source_median_hz": 182.49,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.5343
+    },
+    "give_1": {
+      "source_median_hz": 179.79,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.5574
+    },
+    "count_2": {
+      "source_median_hz": 219.54,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.2754
+    },
+    "total_2": {
+      "source_median_hz": 180.46,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.5516
+    },
+    "give_2": {
+      "source_median_hz": 179.34,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.5612
+    },
+    "count_3": {
+      "source_median_hz": 185.71,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.5078
+    },
+    "total_3": {
+      "source_median_hz": 176.3,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.5882
+    },
+    "give_3": {
+      "source_median_hz": 176.1,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.59
+    },
+    "count_4": {
+      "source_median_hz": 176.64,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.5851
+    },
+    "total_4": {
+      "source_median_hz": 182.29,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.5361
+    },
+    "give_4": {
+      "source_median_hz": 178.15,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.5717
+    },
+    "count_5": {
+      "source_median_hz": 176.27,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.5885
+    },
+    "total_5": {
+      "source_median_hz": 185.89,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.5063
+    },
+    "give_5": {
+      "source_median_hz": 179.41,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.5607
+    },
+    "count_6": {
+      "source_median_hz": 200.87,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.3939
+    },
+    "total_6": {
+      "source_median_hz": 180.01,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.5554
+    },
+    "give_6": {
+      "source_median_hz": 176.43,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.587
+    },
+    "count_7": {
+      "source_median_hz": 167.76,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.6691
+    },
+    "total_7": {
+      "source_median_hz": 181.66,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.5413
+    },
+    "give_7": {
+      "source_median_hz": 176.35,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.5878
+    },
+    "count_8": {
+      "source_median_hz": 182.89,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.531
+    },
+    "total_8": {
+      "source_median_hz": 183.26,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.5279
+    },
+    "give_8": {
+      "source_median_hz": 179.08,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.5636
+    },
+    "count_9": {
+      "source_median_hz": 210.25,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.3317
+    },
+    "total_9": {
+      "source_median_hz": 178.32,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.5702
+    },
+    "give_9": {
+      "source_median_hz": 173.68,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.6122
+    },
+    "count_10": {
+      "source_median_hz": 193.42,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.4476
+    },
+    "total_10": {
+      "source_median_hz": 177.15,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.5806
+    },
+    "give_10": {
+      "source_median_hz": 177.37,
+      "target_median_hz": 280,
+      "pitch_ratio": 1.5787
     }
   }
 }

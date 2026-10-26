@@ -17,11 +17,20 @@ enum class GameActivity {
     NUMBERS,
     ANIMALS,
     MEMORY,
-    PUZZLE;
+    PUZZLE,
+    SHADOWS,
+    SIZES,
+    SORTING,
+    PATHS,
+    PAINTING;
 
-    fun next(): GameActivity = entries[(ordinal + 1) % entries.size]
+    fun next(): GameActivity =
+        if (this == PAINTING) PAINTING else guided[(guided.indexOf(this) + 1) % guided.size]
 
     companion object {
+        val guided
+            get() = entries.filter { it != PAINTING }
+
         fun from(kind: LearningKind): GameActivity = valueOf(kind.name)
     }
 }
@@ -64,6 +73,13 @@ object GameContent {
                 "blue" to "Azul",
                 "green" to "Verde",
                 "purple" to "Morado",
+                "orange" to "Naranja",
+                "pink" to "Rosa",
+                "lightblue" to "Celeste",
+                "brown" to "Marrón",
+                "white" to "Blanco",
+                "black" to "Negro",
+                "gray" to "Gris",
             )
             .map { (id, label) -> LearningItem(id, label, "color_$id", id) }
     val shapes =
@@ -71,7 +87,7 @@ object GameContent {
             (id, label) ->
             LearningItem(id, label, id, id)
         }
-    val numbers = (1..5).map { LearningItem("$it", "$it", "number_$it", "number_$it") }
+    val numbers = (1..10).map { LearningItem("$it", "$it", "number_$it", "count_$it") }
     val animals =
         listOf(
                 "cow" to "Vaca",
@@ -79,6 +95,16 @@ object GameContent {
                 "cat" to "Gato",
                 "bird" to "Pajarito",
                 "duck" to "Pato",
+                "pig" to "Cerdo",
+                "sheep" to "Oveja",
+                "goat" to "Cabra",
+                "horse" to "Caballo",
+                "hen" to "Gallina",
+                "lion" to "León",
+                "elephant" to "Elefante",
+                "monkey" to "Mono",
+                "frog" to "Rana",
+                "owl" to "Búho",
             )
             .map { (id, label) -> LearningItem(id, label, id, id) }
 
@@ -89,6 +115,205 @@ object GameContent {
             LearningKind.NUMBERS -> numbers
             LearningKind.ANIMALS -> animals
         }
+}
+
+/** The remaining bag and recent history are persisted, including across app upgrades. */
+class DrawingRotation(
+    private val categories: Map<String, String>,
+    remainingIds: List<String>? = null,
+    recentIds: List<String> = emptyList(),
+    random: Random = Random.Default,
+) {
+    val remaining =
+        (remainingIds ?: categories.keys.shuffled(random))
+            .filter { it in categories }
+            .distinct()
+            .toMutableList()
+    val recent = recentIds.filter { it in categories }.takeLast(20).toMutableList()
+
+    fun choose(id: String): String {
+        require(id in categories)
+        remaining.remove(id)
+        recent.remove(id)
+        recent.add(id)
+        while (recent.size > 20) recent.removeAt(0)
+        return id
+    }
+
+    fun next(random: Random = Random.Default): String {
+        require(categories.isNotEmpty())
+        if (remaining.isEmpty()) remaining.addAll(categories.keys.shuffled(random))
+        val lastCategory = recent.lastOrNull()?.let(categories::get)
+        val fresh = remaining.filter { it !in recent }.ifEmpty { remaining.toList() }
+        val candidate = fresh.firstOrNull { categories[it] != lastCategory } ?: fresh.first()
+        return choose(candidate)
+    }
+}
+
+enum class CountingMode {
+    TOUCH,
+    FEED,
+    MATCH,
+}
+
+class CountingRound(
+    val mode: CountingMode,
+    val target: Int,
+    val options: List<Int>,
+    val art: String = "apple",
+) : Serializable {
+    init {
+        require(target in 1..10 && target in options && options.distinct().size == options.size)
+    }
+
+    val counted = mutableSetOf<Int>()
+    var completed = false
+        private set
+
+    val totalItems
+        get() = if (mode == CountingMode.FEED) 10 else target
+
+    fun tap(index: Int): Int? {
+        if (
+            completed ||
+                mode == CountingMode.MATCH ||
+                index !in 0 until totalItems ||
+                !counted.add(index)
+        )
+            return null
+        if (counted.size == target) completed = true
+        return counted.size
+    }
+
+    fun answer(number: Int): Boolean {
+        if (completed || mode != CountingMode.MATCH || number != target || number !in options)
+            return false
+        completed = true
+        return true
+    }
+
+    companion object {
+        fun create(
+            mode: CountingMode,
+            maximum: Int,
+            choices: Int,
+            random: Random = Random.Default,
+            previous: Int? = null,
+        ): CountingRound {
+            val limit = maximum.coerceIn(3, 10)
+            val target = (1..limit).filter { it != previous }.random(random)
+            val others =
+                (1..limit).filter { it != target }.shuffled(random).take(choices.coerceIn(2, 3) - 1)
+            return CountingRound(mode, target, (others + target).shuffled(random))
+        }
+    }
+}
+
+data class DiscoveryRound(
+    val activity: GameActivity,
+    val target: String,
+    val options: List<String>,
+    val art: String,
+    var completed: Boolean = false,
+) : Serializable {
+    fun answer(id: String): Boolean {
+        if (completed || id != target || id !in options) return false
+        completed = true
+        return true
+    }
+
+    companion object {
+        fun create(activity: GameActivity, random: Random = Random.Default): DiscoveryRound {
+            val animals =
+                listOf(
+                    "cat",
+                    "elephant",
+                    "giraffe",
+                    "butterfly",
+                    "fish",
+                    "turtle",
+                    "rabbit",
+                    "bird",
+                )
+            val art = animals.random(random)
+            return if (activity == GameActivity.SIZES)
+                DiscoveryRound(
+                    activity,
+                    listOf("big", "small").random(random),
+                    listOf("big", "small").shuffled(random),
+                    art,
+                )
+            else {
+                require(activity == GameActivity.SHADOWS)
+                val options = animals.shuffled(random).take(3)
+                DiscoveryRound(activity, options.random(random), options, options.first())
+            }
+        }
+    }
+}
+
+class SortingRound(val byShape: Boolean, val bins: List<String>, val items: List<String>) :
+    Serializable {
+    init {
+        require(bins.size == 2 && items.size == 4 && items.all { it in bins })
+    }
+
+    val placed = mutableSetOf<Int>()
+    var selected = -1
+    val completed
+        get() = placed.size == items.size
+
+    fun select(index: Int): Boolean {
+        if (index !in items.indices || index in placed || completed) return false
+        selected = index
+        return true
+    }
+
+    fun place(bin: String): Boolean {
+        if (selected !in items.indices || selected in placed || items[selected] != bin) return false
+        placed.add(selected)
+        selected = -1
+        return true
+    }
+
+    companion object {
+        fun create(byShape: Boolean, random: Random = Random.Default): SortingRound {
+            val bins =
+                (if (byShape) listOf("circle", "square", "triangle")
+                    else listOf("red", "yellow", "blue", "green", "purple", "orange"))
+                    .shuffled(random)
+                    .take(2)
+            return SortingRound(byShape, bins, (bins + bins).shuffled(random))
+        }
+    }
+}
+
+class TracingGame(val route: Int) : Serializable {
+    val points: List<Pair<Float, Float>> =
+        (0..20).map { i ->
+            val t = i / 20f
+            val y =
+                when (route % 4) {
+                    0 -> 225f
+                    1 -> 225f + 95f * kotlin.math.sin(t * Math.PI * 2).toFloat()
+                    2 -> 290f - 140f * kotlin.math.sin(t * Math.PI).toFloat()
+                    else -> 160f + 130f * t
+                }
+            (60f + 480f * t) to y
+        }
+    var reached = 0
+        private set
+
+    val completed
+        get() = reached == points.size
+
+    fun touch(x: Float, y: Float): Boolean {
+        if (completed) return false
+        val (tx, ty) = points[reached]
+        if (kotlin.math.hypot(x - tx, y - ty) > 38f) return false
+        reached++
+        return true
+    }
 }
 
 data class LearningRound(

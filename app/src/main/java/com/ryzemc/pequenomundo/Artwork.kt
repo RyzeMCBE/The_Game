@@ -7,7 +7,7 @@ import kotlin.math.min
 
 object Palette {
     val background = Color.rgb(255, 248, 236)
-    val ink = Color.rgb(45, 69, 67)
+    val ink = Color.rgb(36, 61, 89)
     val muted = Color.rgb(83, 105, 98)
     val green = Color.rgb(52, 113, 92)
     val mint = Color.rgb(219, 238, 218)
@@ -17,12 +17,17 @@ object Palette {
     val colors =
         linkedMapOf(
             "red" to Color.rgb(230, 101, 91),
-            "yellow" to Color.rgb(245, 193, 72),
-            "blue" to Color.rgb(87, 158, 207),
+            "orange" to Color.rgb(247, 155, 65),
+            "yellow" to Color.rgb(255, 207, 79),
             "green" to Color.rgb(105, 173, 121),
+            "blue" to Color.rgb(52, 109, 187),
+            "lightblue" to Color.rgb(118, 200, 234),
             "purple" to Color.rgb(156, 128, 206),
-            "orange" to Color.rgb(240, 151, 76),
+            "pink" to Color.rgb(241, 145, 183),
             "brown" to Color.rgb(159, 110, 73),
+            "white" to Color.WHITE,
+            "black" to Color.rgb(42, 43, 48),
+            "gray" to Color.rgb(159, 166, 176),
         )
 }
 
@@ -31,6 +36,35 @@ object Palette {
  */
 object Artwork {
     fun draw(canvas: Canvas, id: String, bounds: RectF) {
+        if (id.startsWith("shadow_")) {
+            DrawingCatalog.find(id.removePrefix("shadow_"))?.draw(canvas, bounds, shadow = true)
+            return
+        }
+        if (
+            id.startsWith("page_") ||
+                id in
+                    setOf(
+                        "pig",
+                        "sheep",
+                        "goat",
+                        "horse",
+                        "hen",
+                        "lion",
+                        "elephant",
+                        "monkey",
+                        "frog",
+                        "owl",
+                        "giraffe",
+                        "butterfly",
+                        "turtle",
+                        "rabbit",
+                    )
+        ) {
+            DrawingCatalog.find(id)?.let {
+                it.draw(canvas, bounds, colored = true)
+                return
+            }
+        }
         val size = min(bounds.width(), bounds.height())
         canvas.save()
         canvas.translate(bounds.centerX() - size / 2, bounds.centerY() - size / 2)
@@ -262,8 +296,10 @@ object Artwork {
                 eyes(40f, 60f, 49f)
                 smile(62f)
             }
-            id.startsWith("color_") ->
+            id.startsWith("color_") -> {
+                circle(50f, 50f, 34f, Palette.ink)
                 circle(50f, 50f, 32f, Palette.colors[id.removePrefix("color_")] ?: Palette.green)
+            }
             id == "circle" -> circle(50f, 50f, 32f, Palette.colors.getValue("red"))
             id == "square" -> box(18f, 18f, 64f, 64f, 8f, Palette.colors.getValue("blue"))
             id == "triangle" ->
@@ -274,19 +310,22 @@ object Artwork {
             id.startsWith("number_") -> {
                 p.color = Palette.ink
                 p.typeface = Typeface.create("sans-serif-rounded", Typeface.BOLD)
-                p.textSize = 76f
+                p.textSize = if (id == "number_10") 62f else 76f
                 p.textAlign = Paint.Align.CENTER
                 c.drawText(id.removePrefix("number_"), 50f, 78f, p)
             }
             id.startsWith("apples_") -> {
-                val count = id.removePrefix("apples_").toIntOrNull()?.coerceIn(1, 5) ?: 1
+                val count = id.removePrefix("apples_").toIntOrNull()?.coerceIn(1, 10) ?: 1
                 for (i in 0 until count) {
-                    val row = if (count > 3) i / 3 else 0
-                    val inRow = if (row == 0) min(count, 3) else count - 3
-                    val col = if (count > 3) i % 3 else i
-                    val x = 50f + (col - (inRow - 1) / 2f) * 31f
-                    val y = if (count > 3) 27f + row * 43 else 48f
-                    draw(c, "apple", RectF(x - 18f, y - 18f, x + 18f, y + 18f))
+                    val columns = if (count > 5) 5 else min(count, 3)
+                    val row = i / columns
+                    val inRow = min(columns, count - row * columns)
+                    val col = i % columns
+                    val step = if (columns == 5) 19f else 31f
+                    val radius = if (columns == 5) 11f else 18f
+                    val x = 50f + (col - (inRow - 1) / 2f) * step
+                    val y = if (count > columns) 27f + row * 43 else 48f
+                    draw(c, "apple", RectF(x - radius, y - radius, x + radius, y + radius))
                 }
             }
             else -> drawUnit(c, "bear")

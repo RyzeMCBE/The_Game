@@ -44,7 +44,10 @@ class Painting(
     }
 
     companion object {
-        val templates = listOf("blank", "house", "flower", "bear", "fish")
+        val templates
+            get() =
+                listOf("blank", "house", "flower", "bear", "fish") +
+                    DrawingCatalog.pages.map { it.id }
 
         fun fromJson(raw: String?): Painting =
             runCatching {
@@ -54,7 +57,7 @@ class Painting(
                         obj.optString("template", "blank").takeIf { it in templates } ?: "blank"
                     val result = Painting(template)
                     val array = obj.optJSONArray("marks") ?: JSONArray()
-                    for (i in 0 until min(array.length(), 200)) {
+                    for (i in 0 until min(array.length(), 1200)) {
                         val m = array.getJSONObject(i)
                         val points = m.optJSONArray("points") ?: JSONArray()
                         val list = mutableListOf<Pair<Float, Float>>()
@@ -91,15 +94,29 @@ class PaintCanvasView(context: Context, var painting: Painting) : View(context) 
     private val brush = Paint(Paint.ANTI_ALIAS_FLAG)
     private var active: PaintMark? = null
     private var pointerId = -1
+    private var sheet: ColoringSheet? = null
+    private var paths: List<Path> = emptyList()
+    private var hits: List<Region> = emptyList()
 
     init {
-        contentDescription = "Lienzo. Pinta con el dedo o toca las zonas para colorear."
+        DrawingCatalog.load(context)
+        prepareRegions()
+        contentDescription =
+            "Lienzo. Pinta con tu dedo. La ayuda mantiene el color dentro de cada parte."
         setLayerType(LAYER_TYPE_SOFTWARE, null)
         isClickable = true
         tag = "paint_canvas"
     }
 
-    private fun regions(): List<Path> {
+    private fun prepareRegions() {
+        sheet = DrawingCatalog.find(painting.template)
+        paths = sheet?.paintAreas ?: legacyRegions()
+        hits =
+            sheet?.hitRegions
+                ?: paths.map { Region().apply { setPath(it, Region(0, 0, 600, 450)) } }
+    }
+
+    private fun legacyRegions(): List<Path> {
         fun oval(l: Float, t: Float, r: Float, b: Float) =
             Path().apply { addOval(l, t, r, b, Path.Direction.CW) }
         fun rect(l: Float, t: Float, r: Float, b: Float) =
@@ -173,10 +190,13 @@ class PaintCanvasView(context: Context, var painting: Painting) : View(context) 
 
     private fun render(canvas: Canvas, w: Int, h: Int) {
         canvas.save()
-        canvas.scale(w / 600f, h / 450f)
+        canvas.drawColor(Color.WHITE)
+        val scale = min(w / 600f, h / 450f)
+        canvas.translate((w - 600f * scale) / 2, (h - 450f * scale) / 2)
+        canvas.scale(scale, scale)
         canvas.clipRect(0f, 0f, 600f, 450f)
-        canvas.drawColor(Color.rgb(255, 253, 247))
-        val regions = regions()
+        canvas.drawColor(Color.WHITE)
+        val regions = paths
         val fills = IntArray(regions.size) { Color.WHITE }
         painting.marks
             .filter { it.type == "fill" && it.region in fills.indices }
@@ -189,8 +209,10 @@ class PaintCanvasView(context: Context, var painting: Painting) : View(context) 
             canvas.drawPath(path, brush)
         }
         for (mark in painting.marks) {
-            if (mark.type == "stroke" && mark.points.isNotEmpty()) {
-                brush.color = mark.color
+            if ((mark.type == "stroke" || mark.type == "erase") && mark.points.isNotEmpty()) {
+                canvas.save()
+                if (mark.region in regions.indices) canvas.clipPath(regions[mark.region])
+                brush.color = if (mark.type == "erase") Color.WHITE else mark.color
                 brush.strokeWidth = mark.size
                 if (mark.points.size == 1) {
                     brush.style = Paint.Style.FILL
@@ -208,6 +230,7 @@ class PaintCanvasView(context: Context, var painting: Painting) : View(context) 
                     brush.style = Paint.Style.STROKE
                     canvas.drawPath(path, brush)
                 }
+                canvas.restore()
             } else if (mark.type == "stamp" && mark.points.isNotEmpty()) {
                 val (x, y) = mark.points[0]
                 Artwork.draw(canvas, mark.art, RectF(x - 42, y - 42, x + 42, y + 42))
@@ -216,7 +239,23 @@ class PaintCanvasView(context: Context, var painting: Painting) : View(context) 
         brush.style = Paint.Style.STROKE
         brush.color = Palette.ink
         brush.strokeWidth = 4f
-        regions.forEach { canvas.drawPath(it, brush) }
+        if (sheet != null) {
+            var regionIndex = 0
+            for (layer in sheet!!.layers) {
+                canvas.save()
+                if (layer.region) {
+                    canvas.clipPath(sheet!!.outlineClips[regionIndex++])
+                    brush.style = Paint.Style.STROKE
+                    brush.color = Palette.ink
+                } else {
+                    brush.style = if (layer.ink) Paint.Style.FILL else Paint.Style.STROKE
+                    brush.color = layer.color
+                }
+                brush.strokeWidth = layer.width
+                canvas.drawPath(layer.path, brush)
+                canvas.restore()
+            }
+        } else regions.forEach { canvas.drawPath(it, brush) }
         brush.style = Paint.Style.FILL
         if (painting.template == "bear") {
             canvas.drawCircle(247f, 215f, 9f, brush)
@@ -246,28 +285,39 @@ class PaintCanvasView(context: Context, var painting: Painting) : View(context) 
 
     fun changeTemplate(id: String) {
         painting = Painting(id)
-        tool = if (id == "blank") "brush" else "fill"
+        tool = "brush"
+        prepareRegions()
         invalidate()
         onChanged?.invoke()
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        fun position(index: Int): Pair<Float, Float> =
-            (event.getX(index) * 600 / width).coerceIn(0f, 600f) to
-                (event.getY(index) * 450 / height).coerceIn(0f, 450f)
+        fun position(index: Int): Pair<Float, Float> {
+            val scale = min(width / 600f, height / 450f)
+            return ((event.getX(index) - (width - 600f * scale) / 2) / scale) to
+                ((event.getY(index) - (height - 450f * scale) / 2) / scale)
+        }
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
-                if (painting.marks.size >= 200) return true
+                if (painting.marks.size >= 1200) return true
                 pointerId = event.getPointerId(0)
                 val point = position(0)
+                if (point.first !in 0f..600f || point.second !in 0f..450f) return true
                 parent.requestDisallowInterceptTouchEvent(true)
+                val hit =
+                    hits.indexOfLast {
+                        it.contains(point.first.roundToInt(), point.second.roundToInt())
+                    }
+                if (painting.template != "blank" && hit < 0 && tool != "stamp") return true
                 when (tool) {
-                    "brush" -> {
+                    "brush",
+                    "eraser" -> {
                         active =
                             PaintMark(
-                                "stroke",
+                                if (tool == "eraser") "erase" else "stroke",
                                 paintColor,
                                 brushSize,
+                                region = hit,
                                 points = mutableListOf(point),
                             )
                         painting.marks.add(active!!)
@@ -277,15 +327,7 @@ class PaintCanvasView(context: Context, var painting: Painting) : View(context) 
                             PaintMark("stamp", art = stamp, points = mutableListOf(point))
                         )
                     "fill" -> {
-                        val paths = regions()
-                        val clip = Region(0, 0, 600, 450)
-                        val hit =
-                            paths.indices.reversed().firstOrNull { i ->
-                                Region()
-                                    .apply { setPath(paths[i], clip) }
-                                    .contains(point.first.roundToInt(), point.second.roundToInt())
-                            }
-                        if (hit != null)
+                        if (hit >= 0)
                             painting.marks.add(PaintMark("fill", paintColor, region = hit))
                     }
                 }
