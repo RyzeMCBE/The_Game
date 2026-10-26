@@ -1,0 +1,10 @@
+Mi pequeño mundo
+
+Ilustraciones vectoriales, melodía y efectos de animales creados para esta aplicación. Los efectos son una representación sintetizada de los sonidos.
+
+Voz sintetizada en español de México con Piper 1.3.0 y el modelo es_MX-claude-high de rhasspy/piper-voices, revisión 5041a7a49ae5b3a0f30e6837769eb03fdbb231bd. Su ficha identifica el conjunto de datos de origen con licencia Apache-2.0.
+
+Fuente: HirCoir/Piper-TTS-Spanish en Hugging Face.
+https://huggingface.co/spaces/HirCoir/Piper-TTS-Spanish
+
+Las grabaciones están incluidas en el APK. El modelo de voz y el sintetizador no forman parte de la aplicación.
