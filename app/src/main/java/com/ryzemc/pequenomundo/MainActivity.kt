@@ -1212,7 +1212,7 @@ class MainActivity : Activity() {
                 v.isSelected = key == chosenColor && !erasing
             }
         }
-        Palette.colors.entries.chunked(if (landscape) 3 else 6).forEach { entries ->
+        Palette.colors.entries.chunked(if (landscape) 4 else 6).forEach { entries ->
             val row =
                 entries.map { (key, color) ->
                     FrameLayout(this).apply {
@@ -1271,6 +1271,7 @@ class MainActivity : Activity() {
                     }
                     .apply {
                         textSize = listOf(13f, 20f, 27f)[index]
+                        setPadding(dp(6), dp(2), dp(6), dp(2))
                         contentDescription =
                             listOf("Pincel fino", "Pincel mediano", "Pincel grueso")[index]
                         brushButtons.add(this)
@@ -1290,27 +1291,30 @@ class MainActivity : Activity() {
                     button("↶", "undo") { canvas.undo() }
                         .apply {
                             textSize = 27f
+                            setPadding(dp(6), dp(2), dp(6), dp(2))
                             contentDescription = "Deshacer último trazo"
                         },
                 )
-        if (landscape)
-            tools.chunked(3).forEach {
-                controls.addFull(columns(it, 48))
-                controls.gap(5)
-            }
+        if (landscape) controls.addFull(columns(tools.take(3), 48))
         else controls.addFull(columns(tools, 48))
         refreshBrush()
-        controls.gap(6)
-        controls.addFull(button("¡Terminé!", "save", Palette.mint) { finishPainting(canvas) }, 52)
-        if (landscape)
+        val finish = button("¡Terminé!", "save", Palette.mint) { finishPainting(canvas) }
+        if (landscape) {
             workspace.addView(
                 ScrollView(this).apply {
                     isVerticalScrollBarEnabled = false
                     addView(controls)
                 },
-                LinearLayout.LayoutParams(dp(172), ViewGroup.LayoutParams.MATCH_PARENT),
+                LinearLayout.LayoutParams(dp(216), ViewGroup.LayoutParams.MATCH_PARENT),
             )
-        else workspace.addFull(controls)
+            // Keep completion, eraser and undo outside the scrolling color rail.
+            body.gap(6)
+            body.addFull(columns(listOf(tools[3], tools[4], finish), 52))
+        } else {
+            controls.gap(6)
+            controls.addFull(finish, 52)
+            workspace.addFull(controls)
+        }
         prompt(if (painting!!.template == "blank") "paint_help" else "border_help")
     }
 

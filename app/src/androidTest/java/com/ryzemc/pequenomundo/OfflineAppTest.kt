@@ -558,6 +558,23 @@ class OfflineAppTest {
                 assertTrue(decor.findViewWithTag<View>("paint_canvas").width > 0)
             }
             capture("painting-landscape")
+            onView(tagged("save")).check(matches(isCompletelyDisplayed()))
+            onView(tagged("eraser")).check(matches(isCompletelyDisplayed()))
+            onView(tagged("undo")).check(matches(isCompletelyDisplayed()))
+            for (key in Palette.colors.keys) onView(tagged("paint_$key"))
+                .check(matches(isCompletelyDisplayed()))
+            onView(tagged("save")).perform(click())
+            awaitTag(scenario, "celebration")
+            awaitNoTag(scenario, "celebration")
+            scenario.onActivity {
+                assertNotEquals(
+                    "house",
+                    it.window.decorView
+                        .findViewWithTag<PaintCanvasView>("paint_canvas")
+                        .painting
+                        .template,
+                )
+            }
             scenario.onActivity {
                 it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
             }
