@@ -1242,7 +1242,7 @@ class MainActivity : Activity() {
                     clipToOutline = true
                 }
             }
-            body.addFull(columns(cards), 201)
+            body.addFull(columns(cards), 224)
             body.gap(12)
         }
         val navigation = mutableListOf<View>()
@@ -1771,7 +1771,7 @@ class MainActivity : Activity() {
                         elevation = dp(3).toFloat()
                     }
                 }
-                body.addFull(columns(cells), 186)
+                body.addFull(columns(cells), 198)
                 body.gap(12)
             }
             val paging = mutableListOf<View>()
