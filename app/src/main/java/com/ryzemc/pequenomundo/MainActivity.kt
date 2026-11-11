@@ -1138,103 +1138,123 @@ class MainActivity : Activity() {
         }
     }
 
+    /** An illustrated, paged bookshelf; only the selected sheet enters the painting view. */
     private fun showAlbum() {
         if (painting == null) painting = store.readDraft()
-        shell(
-            "album",
-            "Mi álbum para pintar",
-            "${DrawingCatalog.pages.size} dibujos para ti, Noah.",
-        )
+        shell("album", "Mi álbum para pintar", "¡Elige un dibujo y dale vida con colores!")
         val filters = listOf("all" to "Todos") + DrawingCatalog.categories
-        val bar = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        val filterRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(2), dp(4), dp(2), dp(4))
+        }
         filters.forEach { (id, label) ->
-            bar.addView(
+            filterRow.addView(
                 button(
-                        label,
-                        "category_$id",
-                        if (id == albumCategory) Palette.mint else Color.WHITE,
-                    ) {
-                        albumCategory = id
-                        albumPage = 0
-                        showAlbum()
-                    }
-                    .apply { textSize = 15f },
-                LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(50)).apply {
-                    rightMargin = dp(8)
+                    label, "category_" + id,
+                    if (id == albumCategory) Palette.butter else Palette.paper,
+                ) {
+                    albumCategory = id
+                    albumPage = 0
+                    showAlbum()
+                }.apply {
+                    textSize = 14f
+                    minHeight = dp(46)
+                    elevation = if (id == albumCategory) dp(3).toFloat() else 0f
+                    isSelected = id == albumCategory
+                },
+                LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(48)).apply {
+                    rightMargin = dp(9)
                 },
             )
         }
+        body.addFull(HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            addView(filterRow)
+            tag = "album_filters"
+        })
+        body.gap(12)
         body.addFull(
-            HorizontalScrollView(this).apply {
-                isHorizontalScrollBarEnabled = false
-                addView(bar)
-            }
-        )
-        body.gap()
-        body.addFull(
-            button("¡Una sorpresa para pintar!", "surprise_drawing", Palette.peach) {
+            button("✦  ¡Sorpréndeme con un dibujo!", "surprise_drawing", Palette.peach) {
                 openSheet(store.nextDrawing(), register = false)
-            }
+            }.apply { elevation = dp(3).toFloat() }
         )
         val draft = painting!!
         if (draft.marks.isNotEmpty()) {
-            body.gap(8)
+            body.gap(9)
             body.addFull(
-                button("Continuar mi dibujo", "continue_paint", Palette.sky) { showPaint() }
+                button("✎  Continuar mi dibujo", "continue_paint", Palette.sky) { showPaint() }
             )
         }
-        body.gap()
-        val pages =
-            store.drawingOrder().mapNotNull(DrawingCatalog::find).filter {
-                albumCategory == "all" || it.category == albumCategory
-            }
+        body.gap(15)
+        val pages = store.drawingOrder().mapNotNull(DrawingCatalog::find).filter {
+            albumCategory == "all" || it.category == albumCategory
+        }
         albumPage = albumPage.coerceIn(0, ((pages.size - 1).coerceAtLeast(0)) / 12)
-        pages.drop(albumPage * 12).take(12).chunked(2).forEach { entries ->
-            val cards =
-                entries.map { sheet ->
-                    LinearLayout(this).apply {
-                        orientation = LinearLayout.VERTICAL
+        body.addFull(text("Escoge tu favorito", 21f, bold = true))
+        body.gap(10)
+        val sheetColors = listOf(Palette.sky, Palette.peach, Palette.mint, Palette.lilac)
+        pages.drop(albumPage * 12).take(12).chunked(2).forEachIndexed { rowIndex, entries ->
+            val cards = entries.mapIndexed { column, sheet ->
+                val shade = sheetColors[(albumPage * 12 + rowIndex * 2 + column) % sheetColors.size]
+                LinearLayout(this).apply {
+                    orientation = LinearLayout.VERTICAL
+                    gravity = Gravity.CENTER
+                    setPadding(dp(9), dp(10), dp(9), dp(10))
+                    tag = "sheet_" + sheet.id
+                    contentDescription = "Pintar " + sheet.name
+                    addFull(
+                        FrameLayout(this@MainActivity).apply {
+                            background = storyPanel(Palette.paper, shade, 21)
+                            setPadding(dp(5), dp(5), dp(5), dp(5))
+                            addView(SheetView(this@MainActivity, sheet),
+                                FrameLayout.LayoutParams(
+                                    ViewGroup.LayoutParams.MATCH_PARENT,
+                                    ViewGroup.LayoutParams.MATCH_PARENT,
+                                ))
+                        },
+                        119,
+                    )
+                    gap(7)
+                    addFull(text(sheet.name, 16f, bold = true).apply {
                         gravity = Gravity.CENTER
-                        setPadding(dp(6), dp(8), dp(6), dp(8))
-                        tag = "sheet_${sheet.id}"
-                        contentDescription = "Pintar ${sheet.name}"
-                        addFull(SheetView(this@MainActivity, sheet), 116)
-                        addFull(
-                            text(sheet.name, 17f, bold = true).apply {
-                                gravity = Gravity.CENTER
-                                maxLines = 2
-                            }
-                        )
-                        clickable(this, Color.WHITE) { openSheet(sheet.id) }
-                        elevation = dp(2).toFloat()
-                    }
+                        maxLines = 2
+                    })
+                    addFull(text("✦ Para pintar", 12f, Palette.green).apply {
+                        gravity = Gravity.CENTER
+                    })
+                    clickable(this, shade) { openSheet(sheet.id) }
+                    elevation = dp(3).toFloat()
+                    clipToOutline = true
                 }
-            body.addFull(columns(cards), 172)
-            body.gap()
+            }
+            body.addFull(columns(cards), 201)
+            body.gap(12)
         }
         val navigation = mutableListOf<View>()
-        if (albumPage > 0)
-            navigation.add(
-                button("Anteriores", "album_previous") {
-                    albumPage--
-                    showAlbum()
-                }
-            )
-        if ((albumPage + 1) * 12 < pages.size)
-            navigation.add(
-                button("Más dibujos", "album_more", Palette.sky) {
-                    albumPage++
-                    showAlbum()
-                }
-            )
-        if (navigation.isNotEmpty()) body.addFull(columns(navigation))
-        body.gap()
+        if (albumPage > 0) navigation.add(
+            button("‹ Anteriores", "album_previous", Palette.paper) {
+                albumPage--
+                showAlbum()
+            }
+        )
+        if ((albumPage + 1) * 12 < pages.size) navigation.add(
+            button("Más dibujos ›", "album_more", Palette.sky) {
+                albumPage++
+                showAlbum()
+            }
+        )
+        if (navigation.isNotEmpty()) {
+            body.gap(3)
+            body.addFull(columns(navigation))
+        }
+        body.gap(17)
         body.addFull(
             button("Hoja en blanco", "blank_page", Palette.mint) {
                 openSheet("blank", register = false)
             }
         )
-        body.gap(8)
+        body.gap(9)
         body.addFull(button("Mis pinturas guardadas", "gallery", Palette.lilac) { showGallery() })
         prompt("album_help")
     }
