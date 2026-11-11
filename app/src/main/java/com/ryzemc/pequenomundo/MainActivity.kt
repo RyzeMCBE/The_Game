@@ -1677,69 +1677,87 @@ class MainActivity : Activity() {
         prompt("animal_explore")
     }
 
+    /** Saved pictures remain private; the gallery is now a small picture museum. */
     private fun showGallery() {
-        shell("gallery", "Mis dibujos", "Un pequeño museo de tus creaciones.")
+        shell("gallery", "Mis obras de arte", "¡Mira todas las creaciones de Noah!")
         val files = store.gallery()
         if (files.isEmpty()) {
-            body.addFull(ArtView(this, "paint"), 180)
             body.addFull(
-                text("Aquí aparecerán los dibujos que guardes.", 19f, Palette.muted).apply {
+                FrameLayout(this).apply {
+                    background = storyPanel(Palette.peach, Palette.paper, 32)
+                    addView(
+                        ArtView(this@MainActivity, "paint"),
+                        FrameLayout.LayoutParams(dp(160), dp(160), Gravity.CENTER),
+                    )
+                    elevation = dp(2).toFloat()
+                },
+                188,
+            )
+            body.gap(12)
+            body.addFull(
+                text("¡Tu museo está esperando su primera obra!", 20f, Palette.muted).apply {
                     gravity = Gravity.CENTER
                 }
             )
-            body.gap()
-            body.addFull(button("Vamos a pintar", "paint", Palette.peach) { showAlbum() })
+            body.gap(14)
+            body.addFull(button("¡Vamos a pintar!", "paint", Palette.peach) { showAlbum() })
         } else {
             galleryPage = galleryPage.coerceIn(0, (files.size - 1) / 12)
-            files.drop(galleryPage * 12).take(12).forEach { file ->
-                val row =
+            body.addFull(text("Tu colección de colores ✦", 21f, bold = true))
+            body.gap(11)
+            val shades = listOf(Palette.peach, Palette.sky, Palette.mint, Palette.lilac)
+            files.drop(galleryPage * 12).take(12).chunked(2).forEachIndexed { rowIndex, entries ->
+                val cells = entries.mapIndexed { column, file ->
+                    val color = shades[(galleryPage * 12 + rowIndex * 2 + column) % shades.size]
                     LinearLayout(this).apply {
-                        orientation = LinearLayout.HORIZONTAL
-                        gravity = Gravity.CENTER_VERTICAL
-                        setPadding(dp(10), dp(8), dp(10), dp(8))
-                        tag = "drawing_${file.name}"
-                        contentDescription =
-                            "Ver dibujo del ${DateFormat.getDateInstance().format(Date(file.lastModified()))}"
-                    }
-                val image =
-                    ImageView(this).apply {
-                        setImageBitmap(
-                            BitmapFactory.decodeFile(
+                        orientation = LinearLayout.VERTICAL
+                        gravity = Gravity.CENTER
+                        setPadding(dp(9), dp(10), dp(9), dp(10))
+                        tag = "drawing_" + file.name
+                        contentDescription = "Ver dibujo del " +
+                            DateFormat.getDateInstance().format(Date(file.lastModified()))
+                        val image = ImageView(this@MainActivity).apply {
+                            setImageBitmap(BitmapFactory.decodeFile(
                                 file.path,
                                 BitmapFactory.Options().apply { inSampleSize = 4 },
-                            )
+                            ))
+                            scaleType = ImageView.ScaleType.FIT_CENTER
+                            background = rounded(Palette.paper, 18)
+                            setPadding(dp(5), dp(5), dp(5), dp(5))
+                            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                        }
+                        addFull(image, 116)
+                        gap(7)
+                        addFull(
+                            text("Mi obra ✦", 16f, bold = true).apply { gravity = Gravity.CENTER }
                         )
-                        scaleType = ImageView.ScaleType.FIT_CENTER
-                        importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                        addFull(
+                            text(
+                                DateFormat.getDateInstance(DateFormat.MEDIUM)
+                                    .format(Date(file.lastModified())),
+                                12f, Palette.muted,
+                            ).apply { gravity = Gravity.CENTER }
+                        )
+                        clickable(this, color) { showDrawing(file.name) }
+                        elevation = dp(3).toFloat()
                     }
-                row.addView(image, LinearLayout.LayoutParams(dp(110), dp(85)))
-                row.addView(
-                    text(
-                        DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT)
-                            .format(Date(file.lastModified())),
-                        16f,
-                    ),
-                    LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f),
-                )
-                clickable(row, Color.WHITE) { showDrawing(file.name) }
-                body.addFull(row)
-                body.gap(10)
+                }
+                body.addFull(columns(cells), 186)
+                body.gap(12)
             }
             val paging = mutableListOf<View>()
-            if (galleryPage > 0)
-                paging.add(
-                    button("Anteriores") {
-                        galleryPage--
-                        showGallery()
-                    }
-                )
-            if ((galleryPage + 1) * 12 < files.size)
-                paging.add(
-                    button("Más dibujos") {
-                        galleryPage++
-                        showGallery()
-                    }
-                )
+            if (galleryPage > 0) paging.add(
+                button("‹ Anteriores", "gallery_previous", Palette.paper) {
+                    galleryPage--
+                    showGallery()
+                }
+            )
+            if ((galleryPage + 1) * 12 < files.size) paging.add(
+                button("Más dibujos ›", "gallery_more", Palette.sky) {
+                    galleryPage++
+                    showGallery()
+                }
+            )
             if (paging.isNotEmpty()) body.addFull(columns(paging))
         }
         prompt("gallery_help")
@@ -1748,17 +1766,28 @@ class MainActivity : Activity() {
     private fun showDrawing(name: String) {
         val file = store.gallery().firstOrNull { it.name == name } ?: return showGallery()
         selectedDrawing = name
-        shell("drawing", "Mi obra de arte")
-        val image =
-            ImageView(this).apply {
-                setImageBitmap(BitmapFactory.decodeFile(file.path))
-                adjustViewBounds = true
-                scaleType = ImageView.ScaleType.FIT_CENTER
-                contentDescription = "Tu dibujo guardado"
-                tag = "saved_drawing"
-            }
-        body.addFull(image)
-        body.gap()
+        shell("drawing", "¡Mi obra de arte!", "Una creación especial de Noah")
+        body.addFull(
+            FrameLayout(this).apply {
+                background = storyPanel(Palette.butter, Palette.paper, 30)
+                setPadding(dp(10), dp(10), dp(10), dp(10))
+                elevation = dp(3).toFloat()
+                val picture = ImageView(this@MainActivity).apply {
+                    setImageBitmap(BitmapFactory.decodeFile(file.path))
+                    adjustViewBounds = true
+                    scaleType = ImageView.ScaleType.FIT_CENTER
+                    background = rounded(Color.WHITE, 20)
+                    contentDescription = "Tu dibujo guardado"
+                    tag = "saved_drawing"
+                }
+                addView(
+                    picture,
+                    FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT),
+                )
+            },
+        )
+        body.gap(15)
         body.addFull(button("Volver a mis dibujos", "back_gallery", Palette.sky) { showGallery() })
         promptKeys = emptyArray()
     }
