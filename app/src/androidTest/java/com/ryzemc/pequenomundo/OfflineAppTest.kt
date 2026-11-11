@@ -168,6 +168,32 @@ class OfflineAppTest {
     }
 
     @Test
+    fun illustratedHomeKeepsActivitiesAccessible() {
+        configure()
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                val decor = activity.window.decorView
+                for (tag in listOf(
+                    "home_hero", "home_hero_art",
+                    "home_art_paint", "home_art_play", "home_art_rainbow",
+                    "paint", "play", "learn", "gallery",
+                )) assertNotNull("Home is missing illustration or action: $tag",
+                    decor.findViewWithTag<View>(tag))
+                assertEquals("Pintar. Mi taller de colores",
+                    decor.findViewWithTag<View>("paint").contentDescription.toString())
+            }
+            clickTag(scenario, "paint")
+            awaitTag(scenario, "screen_album")
+            clickTag(scenario, "home")
+            clickTag(scenario, "play")
+            awaitTag(scenario, "screen_play")
+            clickTag(scenario, "home")
+            clickTag(scenario, "learn")
+            awaitTag(scenario, "screen_learn")
+        }
+    }
+
+    @Test
     fun completeOfflineJourneyUsesSeparateAlbumAndCanvasAndPersistsArtwork() {
         configure()
         @Suppress("DEPRECATION")
