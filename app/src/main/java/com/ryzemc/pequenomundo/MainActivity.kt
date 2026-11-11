@@ -266,11 +266,11 @@ class MainActivity : Activity() {
 
     private fun dp(value: Int) = (value * resources.displayMetrics.density + .5f).toInt()
 
-    private fun rounded(fill: Int, radius: Int = 23) =
+    private fun rounded(fill: Int, radius: Int = 28) =
         GradientDrawable().apply {
             setColor(fill)
             cornerRadius = dp(radius).toFloat()
-            setStroke(dp(1), 0x1881a8b2)
+            setStroke(dp(1), Palette.outline)
         }
 
     private fun clickable(view: View, fill: Int = Color.WHITE, action: () -> Unit): View {
@@ -497,63 +497,145 @@ class MainActivity : Activity() {
         return clickable(card, fill, action)
     }
 
+    /**
+     * A home-only card: the artwork occupies its own illustrated medallion and
+     * the whole surface remains a single accessible tap target.
+     */
+    private fun homeAdventure(
+        title: String,
+        description: String,
+        art: String,
+        fill: Int,
+        tagName: String,
+        vertical: Boolean,
+        action: () -> Unit,
+    ): View {
+        val item =
+            LinearLayout(this).apply {
+                orientation = if (vertical) LinearLayout.VERTICAL else LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(dp(14), dp(12), dp(14), dp(12))
+                minimumHeight = dp(if (vertical) 190 else 106)
+                tag = tagName
+                contentDescription = "$title. $description"
+                elevation = dp(2).toFloat()
+                clipToOutline = true
+            }
+        val artSize = if (vertical) 104 else 88
+        item.addView(
+            HomeAdventureArtView(this, art),
+            LinearLayout.LayoutParams(dp(artSize), dp(artSize)).apply {
+                if (vertical) gravity = Gravity.CENTER_HORIZONTAL
+            },
+        )
+        val labels = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = if (vertical) Gravity.CENTER else Gravity.CENTER_VERTICAL
+            setPadding(if (vertical) 0 else dp(12), 0, 0, 0)
+            addFull(
+                text(title, if (vertical) 23f else 24f, bold = true).apply {
+                    if (vertical) gravity = Gravity.CENTER
+                }
+            )
+            addFull(
+                text(description, if (vertical) 13f else 14f, Palette.muted).apply {
+                    if (vertical) gravity = Gravity.CENTER
+                }
+            )
+        }
+        item.addView(
+            labels,
+            LinearLayout.LayoutParams(
+                if (vertical) ViewGroup.LayoutParams.MATCH_PARENT else 0,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                if (vertical) 0f else 1f,
+            ),
+        )
+        if (!vertical) {
+            item.addView(
+                text("›", 34f, Palette.ink, bold = true).apply {
+                    gravity = Gravity.CENTER
+                    contentDescription = null
+                    importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                },
+                LinearLayout.LayoutParams(dp(24), dp(48)),
+            )
+        }
+        return clickable(item, fill, action)
+    }
+
     private fun showHome() {
         shell("home", "", "")
         val hero =
             FrameLayout(this).apply {
-                background = rounded(Palette.sky)
+                background = rounded(Palette.sky, 36)
+                elevation = dp(3).toFloat()
                 clipToOutline = true
+                tag = "home_hero"
                 addView(
                     MiloHeroView(this@MainActivity),
-                    FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(158)),
+                    FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(198)),
                 )
                 addView(
                     LinearLayout(this@MainActivity).apply {
                         orientation = LinearLayout.VERTICAL
                         gravity = Gravity.CENTER_VERTICAL
-                        setPadding(dp(18), 0, 0, 0)
-                        addFull(text("¡Hola, Noah!", 29f, bold = true))
-                        addFull(text("¿A qué jugamos hoy?", 16f, Palette.muted))
+                        setPadding(dp(18), dp(7), 0, dp(7))
+                        addFull(text("¡Hola, Noah!", 30f, bold = true))
+                        gap(5)
+                        addFull(text("¡Hoy tenemos una nueva aventura!", 16f, Palette.muted))
+                        gap(10)
+                        addFull(
+                            text("PINTA  •  JUEGA  •  DESCUBRE", 11f, Palette.green, bold = true)
+                        )
                     },
                     FrameLayout.LayoutParams(
-                        dp((resources.configuration.screenWidthDp * .58f).toInt()),
-                        dp(158),
+                        dp(((resources.configuration.screenWidthDp - 32) * .58f).toInt().coerceAtLeast(150)),
+                        dp(198),
+                        Gravity.START or Gravity.CENTER_VERTICAL,
                     ),
                 )
             }
-        body.addFull(hero)
-        body.gap(16)
+        body.addFull(hero, 198)
+        body.gap(17)
+        body.addFull(text("Elige tu aventura", 23f, bold = true))
+        body.gap(3)
+        body.addFull(text("Tres mundos para explorar", 15f, Palette.muted))
+        body.gap(13)
         val wide = resources.configuration.screenWidthDp >= 650
         val choices =
             listOf(
-                card("Pintar", "Mi taller de colores", "paint", Palette.peach, "paint", wide) {
+                homeAdventure("Pintar", "Mi taller de colores", "paint", Palette.peach, "paint", wide) {
                     showAlbum()
                 },
-                card("Jugar", "Formas, parejas y piezas", "play", Palette.lilac, "play", wide) {
+                homeAdventure("Jugar", "Diversión y sorpresas", "play", Palette.lilac, "play", wide) {
                     showPlay()
                 },
-                card(
-                    "Aprender",
-                    "Pequeños descubrimientos",
-                    "rainbow",
-                    Palette.mint,
-                    "learn",
-                    wide,
+                homeAdventure(
+                    "Aprender", "Descubro cosas nuevas", "rainbow",
+                    Palette.mint, "learn", wide,
                 ) {
                     showLearn()
                 },
             )
-        if (wide) body.addFull(columns(choices))
+        if (wide) body.addFull(columns(choices, 206))
         else
             choices.forEach {
                 body.addFull(it)
-                body.gap(12)
+                body.gap(11)
             }
-        body.gap(4)
-        body.addFull(button("Mis dibujos", "gallery", Palette.sky) { showGallery() })
+        body.gap(5)
+        body.addFull(
+            button("Mis dibujos guardados", "gallery", Palette.sky) { showGallery() }.apply {
+                textSize = 16f
+                elevation = dp(2).toFloat()
+            }
+        )
         body.gap(12)
         body.addFull(
-            text("Soy Milo. ¡Vamos, Noah!", 16f, Palette.muted).apply { gravity = Gravity.CENTER }
+            text("Con Milo, cada día es una aventura ✦", 14f, Palette.muted).apply {
+                gravity = Gravity.CENTER
+            }
         )
         prompt("welcome")
     }
