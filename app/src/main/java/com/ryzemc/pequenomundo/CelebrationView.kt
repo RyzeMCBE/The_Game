@@ -105,9 +105,10 @@ class CelebrationView(context: Context) : View(context) {
             val y = h * (.12f + i * .041f % .69f)
             canvas.drawCircle(x, y, 1.5f * resources.displayMetrics.density, paint)
         }
-        fireworks(canvas, w * .16f, h * .30f, min(w, h) * .19f, t, .10f, 0)
-        fireworks(canvas, w * .84f, h * .29f, min(w, h) * .20f, t, .29f, 2)
-        fireworks(canvas, w * .50f, h * .20f, min(w, h) * .18f, t, .47f, 4)
+        // Keep celebratory bursts below the heading to preserve readable instructions.
+        fireworks(canvas, w * .16f, h * .39f, min(w, h) * .19f, t, .10f, 0)
+        fireworks(canvas, w * .84f, h * .41f, min(w, h) * .20f, t, .29f, 2)
+        fireworks(canvas, w * .50f, h * .37f, min(w, h) * .18f, t, .47f, 4)
 
         val entrance = (t / .21f).coerceIn(0f, 1f)
         val scale =
@@ -140,7 +141,8 @@ class CelebrationView(context: Context) : View(context) {
             val phase = ((t - .18f) / .82f).coerceIn(0f, 1f)
             if (phase <= 0) break
             val x = (i * .618034f % 1f) * w
-            val y = h * .22f + (i * .1732f % .5f) * h + phase * h * .23f
+            val y = (h * (.35f + (i * .1732f % .37f)) + phase * h * .13f)
+                .coerceAtMost(h * .79f)
             val opacity = (sin(phase * PI) * 170).toInt().coerceIn(0, 170)
             paint.color = colors[i % colors.size]
             paint.alpha = opacity
