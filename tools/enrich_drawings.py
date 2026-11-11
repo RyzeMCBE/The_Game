@@ -10,7 +10,7 @@ STYLE = "storybook_illustrated_v2"
 
 
 def stroke(d: str, width: float = 2.5) -> dict:
-    return {"d": d, "color": INK, "region": False, "width": width, "ink": False}
+    return {"d": d, "color": INK, "region": False, "width": width, "ink": False, "decoration": True}
 
 
 def flourishes(page: dict) -> list[dict]:
