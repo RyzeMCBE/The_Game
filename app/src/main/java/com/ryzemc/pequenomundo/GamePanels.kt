@@ -29,12 +29,14 @@ open class GamePanel(context: Context) : LinearLayout(context) {
         }
 
     protected fun surface(view: View, color: Int = Color.WHITE, action: () -> Unit): View {
-        view.background =
-            GradientDrawable().apply {
-                setColor(color)
-                cornerRadius = dp(24).toFloat()
-                setStroke(dp(2), 0x2290b4bf)
-            }
+        view.background = GradientDrawable(
+            GradientDrawable.Orientation.TL_BR,
+            intArrayOf(color, Palette.paper),
+        ).apply {
+            cornerRadius = dp(25).toFloat()
+            setStroke(dp(1), Palette.outline)
+        }
+        view.elevation = dp(2).toFloat()
         view.isClickable = true
         view.isFocusable = true
         view.setOnClickListener { action() }
@@ -71,13 +73,20 @@ open class GamePanel(context: Context) : LinearLayout(context) {
             gravity = Gravity.CENTER
             tag = tagName
             contentDescription = text
-            setPadding(dp(4), dp(8), dp(4), dp(8))
-            addView(ArtView(context, art), LayoutParams(LayoutParams.MATCH_PARENT, dp(artHeight)))
-            if (text.isNotEmpty())
-                addView(
-                    label(text, 18f),
-                    LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT),
-                )
+            setPadding(dp(5), dp(7), dp(5), dp(7))
+            addView(
+                ArtView(context, art).apply {
+                    background = GradientDrawable(
+                        GradientDrawable.Orientation.TL_BR,
+                        intArrayOf(Palette.sky, Palette.paper),
+                    ).apply { cornerRadius = dp(20).toFloat() }
+                },
+                LayoutParams(LayoutParams.MATCH_PARENT, dp(artHeight)),
+            )
+            if (text.isNotEmpty()) addView(
+                label(text, 17f),
+                LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT),
+            )
             surface(this, Color.WHITE, action)
         }
 }
