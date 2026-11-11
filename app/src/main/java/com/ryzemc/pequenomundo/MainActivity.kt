@@ -1221,7 +1221,7 @@ class MainActivity : Activity() {
                         FrameLayout(this@MainActivity).apply {
                             background = storyPanel(Palette.paper, shade, 21)
                             setPadding(dp(5), dp(5), dp(5), dp(5))
-                            addView(SheetView(this@MainActivity, sheet),
+                            addView(SheetView(this@MainActivity, sheet, colored = true),
                                 FrameLayout.LayoutParams(
                                     ViewGroup.LayoutParams.MATCH_PARENT,
                                     ViewGroup.LayoutParams.MATCH_PARENT,
