@@ -1,0 +1,14 @@
+.gradle/
+.kotlin/
+__pycache__/
+*.py[cod]
+.idea/
+local.properties
+**/build/
+*.iml
+*.jks
+*.keystore
+*.p12
+signing.json
+tools/.voice-model/
+tools/.venv/
