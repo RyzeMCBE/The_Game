@@ -8,68 +8,198 @@ import android.view.View
 import kotlin.math.min
 
 /** Quiet scenery leaves the activity itself as the strongest visual element. */
+/** Soft illustrated paper backdrop shared by all native screens. */
 class StorybookBackground : Drawable() {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val brush = Paint(Paint.ANTI_ALIAS_FLAG)
 
     override fun draw(canvas: Canvas) {
         val w = bounds.width().toFloat()
         val h = bounds.height().toFloat()
-        paint.shader =
-            LinearGradient(
-                0f,
-                0f,
-                0f,
-                h,
-                intArrayOf(0xffeaf8ff.toInt(), Palette.background, 0xffedf5df.toInt()),
-                floatArrayOf(0f, .42f, 1f),
-                Shader.TileMode.CLAMP,
-            )
-        canvas.drawRect(bounds, paint)
-        paint.shader = null
-        paint.color = 0x99ffffff.toInt()
-        for ((x, y) in listOf(.06f to .15f, .94f to .28f)) {
-            canvas.drawOval(w * x - w * .15f, h * y, w * x + w * .15f, h * y + w * .11f, paint)
-            canvas.drawCircle(w * x, h * y, w * .08f, paint)
+        canvas.save()
+        canvas.translate(bounds.left.toFloat(), bounds.top.toFloat())
+        brush.shader = LinearGradient(
+            0f, 0f, 0f, h,
+            intArrayOf(0xffdff4ff.toInt(), Palette.background, 0xfffff1e0.toInt()),
+            floatArrayOf(0f, .48f, 1f), Shader.TileMode.CLAMP,
+        )
+        canvas.drawRect(0f, 0f, w, h, brush)
+        brush.shader = null
+
+        // Quiet clouds and tiny watercolor-like dots never compete with content.
+        brush.color = 0x99ffffff.toInt()
+        listOf(.13f to .13f, .89f to .3f).forEach { (x, y) ->
+            val cx = w * x
+            val cy = h * y
+            canvas.drawOval(cx - w * .17f, cy, cx + w * .17f, cy + w * .075f, brush)
+            canvas.drawCircle(cx - w * .065f, cy + w * .008f, w * .065f, brush)
+            canvas.drawCircle(cx + w * .05f, cy - w * .005f, w * .075f, brush)
         }
-        paint.color = 0x228acb9b
-        canvas.drawOval(-w * .3f, h - w * .16f, w * .8f, h + w * .3f, paint)
-        canvas.drawOval(w * .4f, h - w * .1f, w * 1.3f, h + w * .2f, paint)
+        brush.color = 0x337bc9c1
+        canvas.drawOval(-w * .3f, h - w * .19f, w * .7f, h + w * .19f, brush)
+        brush.color = 0x22e8ad85
+        canvas.drawOval(w * .42f, h - w * .09f, w * 1.28f, h + w * .22f, brush)
+        brush.color = 0x88ffe1a4.toInt()
+        for ((x, y, r) in listOf(
+            Triple(.12f, .39f, 3f), Triple(.87f, .57f, 4f),
+            Triple(.24f, .76f, 3f), Triple(.77f, .87f, 3f),
+        )) canvas.drawCircle(w * x, h * y, r, brush)
+        canvas.restore()
     }
 
     override fun setAlpha(alpha: Int) = Unit
-
     override fun setColorFilter(filter: ColorFilter?) = Unit
-
     @Deprecated("Opacity is not used") override fun getOpacity() = PixelFormat.OPAQUE
 }
 
+/** Original high-detail, resolution-independent Milo illustration for the welcome scene. */
 class MiloHeroView(context: Context) : View(context) {
     private val brush = Paint(Paint.ANTI_ALIAS_FLAG)
 
+    init {
+        tag = "home_hero_art"
+        contentDescription = "Milo, un osito artista, saluda a Noah en un jardín de colores"
+        importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
+    }
+
+    private fun ellipse(c: Canvas, x: Float, y: Float, w: Float, h: Float, color: Int) {
+        brush.style = Paint.Style.FILL
+        brush.color = color
+        c.drawOval(x, y, x + w, y + h, brush)
+    }
+
+    private fun circle(c: Canvas, x: Float, y: Float, r: Float, color: Int) {
+        brush.style = Paint.Style.FILL
+        brush.color = color
+        c.drawCircle(x, y, r, brush)
+    }
+
+    private fun stroke(c: Canvas, x: Float, y: Float, tx: Float, ty: Float, color: Int, thick: Float) {
+        brush.style = Paint.Style.STROKE
+        brush.strokeCap = Paint.Cap.ROUND
+        brush.strokeWidth = thick
+        brush.color = color
+        c.drawLine(x, y, tx, ty, brush)
+        brush.style = Paint.Style.FILL
+    }
+
     override fun onDraw(canvas: Canvas) {
-        val w = width.toFloat()
-        val h = height.toFloat()
-        brush.color = Palette.sky
-        canvas.drawRoundRect(0f, 0f, w, h, 32f, 32f, brush)
-        brush.color = 0xffc8e4ae.toInt()
-        canvas.drawOval(-w * .15f, h * .63f, w * .7f, h * 1.55f, brush)
-        brush.color = 0xff9dce9e.toInt()
-        canvas.drawOval(w * .3f, h * .72f, w * 1.2f, h * 1.6f, brush)
-        brush.color = Color.WHITE
-        canvas.drawOval(w * .06f, h * .15f, w * .25f, h * .33f, brush)
-        canvas.drawCircle(w * .14f, h * .17f, h * .075f, brush)
-        val s = min(h * .85f, w * .38f)
-        brush.color = 0xff6d9bc1.toInt()
-        canvas.drawRoundRect(
-            w - s * .95f,
-            h * .61f,
-            w - s * .13f,
-            h * 1.08f,
-            s * .15f,
-            s * .15f,
-            brush,
+        super.onDraw(canvas)
+        if (width == 0 || height == 0) return
+        canvas.save()
+        canvas.scale(width / 600f, height / 250f)
+        brush.shader = LinearGradient(
+            0f, 0f, 560f, 250f,
+            intArrayOf(0xffdcf4ff.toInt(), 0xffe2f8ef.toInt(), 0xffffecdb.toInt()),
+            null, Shader.TileMode.CLAMP,
         )
-        Artwork.draw(canvas, "bear", RectF(w - s * 1.07f, h * .01f, w - s * .03f, h * .01f + s))
+        canvas.drawRoundRect(0f, 0f, 600f, 250f, 42f, 42f, brush)
+        brush.shader = null
+        circle(canvas, 513f, 61f, 42f, 0x88fff3bc.toInt())
+        circle(canvas, 513f, 61f, 31f, 0xffffe59a.toInt())
+        brush.color = Color.WHITE
+        listOf(290f to 34f, 375f to 64f).forEach { (x, y) ->
+            ellipse(canvas, x, y, 80f, 25f, 0xcaffffff.toInt())
+            circle(canvas, x + 24f, y, 23f, 0xcaffffff.toInt())
+            circle(canvas, x + 49f, y - 6f, 28f, 0xcaffffff.toInt())
+        }
+        ellipse(canvas, 130f, 211f, 430f, 130f, 0xffa6ddbb.toInt())
+        ellipse(canvas, 315f, 221f, 300f, 110f, 0xff79c7a9.toInt())
+        ellipse(canvas, 300f, 225f, 310f, 46f, 0xffd6eeb5.toInt())
+
+        // Little paper stars and flowers around Milo.
+        for ((x, y, r) in listOf(Triple(330f, 38f, 5f), Triple(557f, 104f, 4f),
+            Triple(357f, 145f, 3f), Triple(548f, 184f, 4f))) {
+            stroke(canvas, x-r, y, x+r, y, 0xffffe08a.toInt(), 3f)
+            stroke(canvas, x, y-r, x, y+r, 0xffffe08a.toInt(), 3f)
+        }
+
+        // The bear is built from rounded, layered illustration shapes instead of icons.
+        ellipse(canvas, 398f, 217f, 162f, 20f, 0x44655d72)
+        ellipse(canvas, 408f, 149f, 142f, 111f, 0xff93694f.toInt())
+        ellipse(canvas, 411f, 145f, 138f, 112f, 0xffce9a72.toInt())
+        ellipse(canvas, 430f, 168f, 99f, 76f, 0xffffe4bd.toInt())
+        ellipse(canvas, 395f, 183f, 49f, 45f, 0xffb88261.toInt())
+        ellipse(canvas, 522f, 181f, 44f, 45f, 0xffb88261.toInt())
+        ellipse(canvas, 399f, 192f, 42f, 33f, 0xffdcaa82.toInt())
+        ellipse(canvas, 524f, 194f, 37f, 28f, 0xffdcaa82.toInt())
+
+        // Ears with warm centers, tufts, and soft cheek shapes.
+        circle(canvas, 421f, 85f, 35f, 0xffab795b.toInt())
+        circle(canvas, 519f, 85f, 35f, 0xffab795b.toInt())
+        circle(canvas, 423f, 88f, 24f, 0xffefb29f.toInt())
+        circle(canvas, 519f, 88f, 24f, 0xffefb29f.toInt())
+        ellipse(canvas, 395f, 65f, 148f, 124f, 0xffb9825e.toInt())
+        ellipse(canvas, 398f, 62f, 146f, 126f, 0xffdcaa7f.toInt())
+        ellipse(canvas, 425f, 127f, 96f, 59f, 0xffffe1bc.toInt())
+        ellipse(canvas, 414f, 134f, 31f, 18f, 0xffec9f94.toInt())
+        ellipse(canvas, 500f, 134f, 31f, 18f, 0xffec9f94.toInt())
+        ellipse(canvas, 424f, 85f, 93f, 15f, 0x33fff8e9)
+        circle(canvas, 441f, 125f, 6.6f, 0xff374051.toInt())
+        circle(canvas, 496f, 125f, 6.6f, 0xff374051.toInt())
+        circle(canvas, 443f, 123f, 2.2f, Color.WHITE)
+        circle(canvas, 498f, 123f, 2.2f, Color.WHITE)
+        ellipse(canvas, 459f, 143f, 20f, 13f, 0xff694e4e.toInt())
+        brush.color = 0xff74585b.toInt()
+        brush.style = Paint.Style.STROKE
+        brush.strokeWidth = 3.5f
+        brush.strokeCap = Paint.Cap.ROUND
+        val smile = Path().apply { moveTo(460f, 158f); quadTo(469f, 171f, 481f, 158f) }
+        canvas.drawPath(smile, brush)
+        brush.style = Paint.Style.FILL
+        ellipse(canvas, 450f, 175f, 53f, 12f, 0xff86c7c7.toInt())
+
+        // Paintbrush in one paw: cheerful and recognizable at small sizes.
+        stroke(canvas, 544f, 200f, 568f, 112f, 0xff895a4b.toInt(), 13f)
+        stroke(canvas, 544f, 200f, 568f, 112f, 0xffe0b07a.toInt(), 7f)
+        stroke(canvas, 567f, 120f, 573f, 98f, 0xffd6dbe1.toInt(), 12f)
+        ellipse(canvas, 566f, 88f, 14f, 24f, 0xffec779b.toInt())
+        ellipse(canvas, 569f, 92f, 6f, 10f, 0xffffc2d6.toInt())
+        ellipse(canvas, 523f, 178f, 33f, 35f, 0xffdca682.toInt())
+        ellipse(canvas, 527f, 186f, 13f, 13f, 0xffffd5ac.toInt())
+
+        // Small flowers anchor the garden scene.
+        for ((x, y) in listOf(355f to 217f, 577f to 220f)) {
+            stroke(canvas, x, y+21f, x, y-1f, 0xff6cb889.toInt(), 4f)
+            listOf(-9f to 0f, 9f to 0f, 0f to -9f, 0f to 9f).forEach { (dx,dy) ->
+                circle(canvas, x+dx, y+dy, 9f, 0xffffd1d9.toInt())
+            }
+            circle(canvas, x, y, 7f, 0xffffd065.toInt())
+        }
+        canvas.restore()
+    }
+}
+
+/** Illustrated activity medallion used by the new home cards. */
+class HomeAdventureArtView(context: Context, private val kind: String) : View(context) {
+    private val brush = Paint(Paint.ANTI_ALIAS_FLAG)
+
+    init {
+        tag = "home_art_" + kind
+        importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        super.onDraw(canvas)
+        if (width == 0 || height == 0) return
+        val size = min(width, height).toFloat()
+        canvas.save()
+        canvas.translate((width - size) / 2f, (height - size) / 2f)
+        canvas.scale(size / 100f, size / 100f)
+        brush.color = 0x66ffffff
+        canvas.drawCircle(50f, 51f, 47f, brush)
+        brush.color = 0x55c7b4a8
+        canvas.drawOval(16f, 83f, 84f, 96f, brush)
+        brush.color = when(kind) {
+            "paint" -> 0xfffff1bf.toInt()
+            "play" -> 0xffdeeaff.toInt()
+            else -> 0xfff3e3ff.toInt()
+        }
+        canvas.drawCircle(49f, 46f, 42f, brush)
+        Artwork.draw(canvas, kind, RectF(11f, 8f, 90f, 88f))
+        brush.color = 0xffffdf8c.toInt()
+        canvas.drawCircle(89f, 16f, 3.3f, brush)
+        canvas.drawCircle(8f, 75f, 2.8f, brush)
+        canvas.restore()
     }
 }
 
