@@ -2,6 +2,11 @@
 
 Aplicación Android nativa en Kotlin para Noah, de 3 años. Todos los dibujos, voces, sonidos y juegos vienen dentro de la APK: funciona sin conexión desde el primer inicio. No contiene WebView, cuentas, publicidad, servidor ni permisos de red, micrófono o almacenamiento compartido.
 
+## Rediseño visual por etapas
+
+- **Etapa 1 — Inicio e identidad visual:** Home con Milo ilustrado en un jardín, nueva paleta de cuento, ilustraciones renovadas de pintar/jugar/aprender, tarjetas de actividad grandes y pruebas de navegación. La funcionalidad y las preferencias guardadas se mantienen intactas.
+- **Pendiente:** aplicar el estilo al álbum, lienzo y demás juegos; eliminar voces y acceso de adulto; proteger los controles sensibles y volver a validar la APK final.
+
 ## Edición 1.2.0
 
 - Diseño infantil con escenarios suaves, Milo, tarjetas de papel, contornos claros y controles grandes.
