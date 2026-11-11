@@ -273,8 +273,17 @@ class MainActivity : Activity() {
             setStroke(dp(1), Palette.outline)
         }
 
+    /** Subtle watercolor gradients for cards; no bitmap assets or network. */
+    private fun storyPanel(first: Int, second: Int = Palette.paper, radius: Int = 28) =
+        GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(first, second)).apply {
+            cornerRadius = dp(radius).toFloat()
+            setStroke(dp(1), Palette.outline)
+        }
+
     private fun clickable(view: View, fill: Int = Color.WHITE, action: () -> Unit): View {
-        view.background = RippleDrawable(ColorStateList.valueOf(0x2234715C), rounded(fill), null)
+        view.background = RippleDrawable(
+            ColorStateList.valueOf(0x225c82ad), storyPanel(fill, Palette.paper), null
+        )
         view.isClickable = true
         view.isFocusable = true
         view.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
@@ -445,15 +454,50 @@ class MainActivity : Activity() {
         )
         root.addView(scroll, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
         if (title.isNotEmpty()) {
-            body.addFull(text(title, 29f, bold = true))
-            body.gap(4)
-        }
-        if (subtitle.isNotEmpty()) {
-            body.addFull(text(subtitle, 17f, Palette.muted))
-            body.gap()
+            val artId = when (route) {
+                "album", "paint", "gallery", "drawing" -> "paint"
+                "learn", "learning", "animal_explore" -> "rainbow"
+                "count_menu", "counting" -> "apple"
+                "paths" -> "duck"
+                "sorting", "play", "puzzle", "memory", "discovery" -> "play"
+                "break" -> "sleep"
+                else -> "star"
+            }
+            val introduction = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(dp(17), dp(15), dp(14), dp(15))
+                background = storyPanel(Palette.sky, Palette.paper, 30)
+                elevation = dp(2).toFloat()
+                tag = "storybook_header"
+            }
+            introduction.addView(
+                LinearLayout(this).apply {
+                    orientation = LinearLayout.VERTICAL
+                    addFull(text(title, 25f, bold = true))
+                    if (subtitle.isNotEmpty()) {
+                        gap(4)
+                        addFull(text(subtitle, 15f, Palette.muted))
+                    }
+                },
+                LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f),
+            )
+            introduction.addView(
+                FrameLayout(this).apply {
+                    background = rounded(Palette.butter, 22)
+                    addView(
+                        ArtView(this@MainActivity, artId),
+                        FrameLayout.LayoutParams(dp(66), dp(66), Gravity.CENTER),
+                    )
+                },
+                LinearLayout.LayoutParams(dp(76), dp(76)).apply { leftMargin = dp(8) },
+            )
+            body.addFull(introduction)
+            body.gap(15)
         }
     }
 
+    /** Friendly illustrated activity card reused by all game menus. */
     private fun card(
         title: String,
         description: String,
@@ -463,38 +507,52 @@ class MainActivity : Activity() {
         vertical: Boolean = false,
         action: () -> Unit,
     ): View {
-        val card =
-            LinearLayout(this).apply {
-                orientation = if (vertical) LinearLayout.VERTICAL else LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
-                setPadding(dp(15), dp(12), dp(15), dp(12))
-                minimumHeight = dp(if (vertical) 195 else 104)
-                tag = tagName
-                contentDescription = "$title. $description"
-            }
-        card.addView(
-            ArtView(this, art),
-            LinearLayout.LayoutParams(dp(if (vertical) 94 else 76), dp(if (vertical) 94 else 76))
-                .apply { gravity = Gravity.CENTER_HORIZONTAL },
-        )
-        val labels =
-            LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(if (vertical) 0 else dp(15), 0, 0, 0)
-                addFull(
-                    text(title, 24f, bold = true).apply { if (vertical) gravity = Gravity.CENTER }
+        val item = LinearLayout(this).apply {
+            orientation = if (vertical) LinearLayout.VERTICAL else LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(12), dp(12), dp(12), dp(12))
+            minimumHeight = dp(if (vertical) 190 else 106)
+            tag = tagName
+            contentDescription = title + ". " + description
+            elevation = dp(2).toFloat()
+            clipToOutline = true
+        }
+        item.addView(
+            FrameLayout(this).apply {
+                background = storyPanel(Palette.paper, fill, 25)
+                addView(
+                    ArtView(this@MainActivity, art),
+                    FrameLayout.LayoutParams(dp(76), dp(76), Gravity.CENTER),
                 )
-                addFull(text(description, 15f).apply { if (vertical) gravity = Gravity.CENTER })
-            }
-        card.addView(
-            labels,
-            LinearLayout.LayoutParams(
-                if (vertical) ViewGroup.LayoutParams.MATCH_PARENT else 0,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                if (vertical) 0f else 1f,
-            ),
+            },
+            LinearLayout.LayoutParams(dp(if (vertical) 108 else 88), dp(if (vertical) 108 else 88))
+                .apply { if (vertical) gravity = Gravity.CENTER_HORIZONTAL },
         )
-        return clickable(card, fill, action)
+        val labels = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(if (vertical) 0 else dp(13), 0, 0, 0)
+            addFull(text(title, 22f, bold = true).apply {
+                if (vertical) gravity = Gravity.CENTER
+            })
+            gap(3)
+            addFull(text(description, 14f, Palette.muted).apply {
+                if (vertical) gravity = Gravity.CENTER
+            })
+        }
+        item.addView(labels, LinearLayout.LayoutParams(
+            if (vertical) ViewGroup.LayoutParams.MATCH_PARENT else 0,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            if (vertical) 0f else 1f,
+        ))
+        if (!vertical) item.addView(
+            text("›", 31f, Palette.ink, true).apply {
+                gravity = Gravity.CENTER
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            },
+            LinearLayout.LayoutParams(dp(21), dp(48)),
+        )
+        return clickable(item, fill, action)
     }
 
     /**
