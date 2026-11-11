@@ -45,6 +45,14 @@ class PuzzlePanel(
                 LinearLayout(context).apply {
                     orientation = VERTICAL
                     gravity = Gravity.CENTER
+                    background = GradientDrawable(
+                        GradientDrawable.Orientation.TL_BR,
+                        intArrayOf(if (bank) Palette.sky else Palette.peach, Palette.paper),
+                    ).apply {
+                        cornerRadius = dp(25).toFloat()
+                        setStroke(dp(1), Palette.outline)
+                    }
+                    elevation = dp(2).toFloat()
                 }
             val rows = game.pieceCount / 2
             repeat(rows) { row ->
@@ -163,9 +171,12 @@ class PuzzlePanel(
         init {
             isClickable = true
             background =
-                GradientDrawable().apply {
-                    setColor(Color.WHITE)
-                    cornerRadius = 16 * resources.displayMetrics.density
+                GradientDrawable(
+                    GradientDrawable.Orientation.TL_BR,
+                    intArrayOf(Palette.paper, Palette.sky),
+                ).apply {
+                    cornerRadius = 18 * resources.displayMetrics.density
+                    setStroke(resources.displayMetrics.density.toInt().coerceAtLeast(1), Palette.outline)
                 }
         }
 
