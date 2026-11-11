@@ -1289,21 +1289,27 @@ class MainActivity : Activity() {
             LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
+                background = storyPanel(Palette.sky, Palette.paper, 24)
+                setPadding(dp(5), dp(4), dp(5), dp(4))
+                elevation = dp(2).toFloat()
             }
         heading.addView(
             button("Álbum", "album_back", Palette.sky) { showAlbum() }.apply { textSize = 15f },
             LinearLayout.LayoutParams(dp(76), dp(48)),
         )
         heading.addView(
-            text("¡A pintar, Noah!", 21f, bold = true).apply { gravity = Gravity.CENTER },
+            text("¡A pintar!", 19f, bold = true).apply { gravity = Gravity.CENTER },
             LinearLayout.LayoutParams(0, dp(48), 1f),
         )
+        // The completion button lives in the upper toolbar, away from the drawing hand.
         heading.addView(
-            button("♪", "repeat", Palette.peach) { audio.say(*promptKeys) }
-                .apply { contentDescription = "Escuchar a Milo" },
-            LinearLayout.LayoutParams(dp(48), dp(48)),
+            button("¡Listo! ✓", "save", Palette.mint) {
+                paintView?.let { finishPainting(it) }
+            }.apply { textSize = 15f; contentDescription = "Terminar y guardar mi pintura" },
+            LinearLayout.LayoutParams(dp(106), dp(48)),
         )
-        body.addFull(heading, 52)
+        body.addFull(heading, 56)
+        body.gap(7)
         val canvas =
             PaintCanvasView(this, painting!!).apply {
                 paintColor = Palette.colors.getValue(chosenColor)
@@ -1313,7 +1319,7 @@ class MainActivity : Activity() {
                     painting = this.painting
                     store.saveDraft(this.painting)
                 }
-                background = rounded(Color.WHITE, 22)
+                background = rounded(Palette.paper, 24)
                 clipToOutline = true
             }
         paintView = canvas
@@ -1334,8 +1340,9 @@ class MainActivity : Activity() {
         val landscape = workspace.orientation == LinearLayout.HORIZONTAL
         val paper =
             FrameLayout(this).apply {
-                background = rounded(Color.WHITE, 22)
-                elevation = dp(2).toFloat()
+                background = storyPanel(Palette.butter, Palette.paper, 27)
+                elevation = dp(4).toFloat()
+                setPadding(dp(4), dp(4), dp(4), dp(4))
                 addView(
                     canvas,
                     FrameLayout.LayoutParams(
@@ -1355,7 +1362,13 @@ class MainActivity : Activity() {
                     bottomMargin = dp(8)
                 },
         )
-        val controls = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        val controls = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = storyPanel(Palette.sky, Palette.paper, 25)
+            setPadding(dp(7), dp(8), dp(7), dp(8))
+            elevation = dp(2).toFloat()
+            tag = "paint_tools"
+        }
         val swatches = mutableMapOf<String, FrameLayout>()
         fun refreshColors() {
             swatches.forEach { (key, v) ->
@@ -1458,7 +1471,6 @@ class MainActivity : Activity() {
         if (landscape) controls.addFull(columns(tools.take(3), 48))
         else controls.addFull(columns(tools, 48))
         refreshBrush()
-        val finish = button("¡Terminé!", "save", Palette.mint) { finishPainting(canvas) }
         if (landscape) {
             workspace.addView(
                 ScrollView(this).apply {
@@ -1467,12 +1479,10 @@ class MainActivity : Activity() {
                 },
                 LinearLayout.LayoutParams(dp(216), ViewGroup.LayoutParams.MATCH_PARENT),
             )
-            // Keep completion, eraser and undo outside the scrolling color rail.
+            // Keep the eraser and undo visible; completion is above the canvas.
             body.gap(6)
-            body.addFull(columns(listOf(tools[3], tools[4], finish), 52))
+            body.addFull(columns(listOf(tools[3], tools[4]), 52))
         } else {
-            controls.gap(6)
-            controls.addFull(finish, 52)
             workspace.addFull(controls)
         }
         prompt(if (painting!!.template == "blank") "paint_help" else "border_help")
