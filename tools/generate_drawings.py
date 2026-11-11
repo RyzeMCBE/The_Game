@@ -5,6 +5,7 @@ parts and line work. Generated JSON is committed; normal Android builds do not
 run this script. SVG contact sheets can be rendered for authoring QA.
 """
 from pathlib import Path
+from enrich_drawings import enrich_pages, STYLE
 import copy
 import hashlib
 import json
@@ -480,9 +481,10 @@ def build():
             for key,title,shapes in scenes:pages.append({"id":"page_"+key,"name":title,"category":category,"categoryName":label,"layers":transform(shapes,100,25,4)})
     assert len(pages)==200
     assert len({p["id"] for p in pages})==200
+    enrich_pages(pages)
     hashes=[hashlib.sha256(json.dumps([(s["d"],s["region"],s["ink"]) for s in p["layers"]]).encode()).hexdigest() for p in pages]
     assert len(set(hashes))==200, "Every illustration must have different geometry"
-    data={"version":1,"width":600,"height":450,"author":"Original vector artwork created for El mundo de Noah","pages":pages}
+    data={"version":1,"artStyle":STYLE,"width":600,"height":450,"author":"Original vector artwork created for El mundo de Noah","pages":pages}
     (DEST/"catalog.json").write_text(json.dumps(data,ensure_ascii=False,separators=(",",":")),encoding="utf-8")
     print("Created 200 unique vector sheets:", {c:sum(p["category"]==c for p in pages) for c in sorted({p["category"] for p in pages})})
 
