@@ -168,6 +168,50 @@ class OfflineAppTest {
     }
 
     @Test
+    fun storybookAlbumStudioGamesAndGalleryNavigation() {
+        configure()
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            clickTag(scenario, "paint")
+            awaitTag(scenario, "screen_album")
+            awaitTag(scenario, "storybook_header")
+            awaitTag(scenario, "album_filters")
+            scenario.onActivity { activity ->
+                val root = activity.window.decorView
+                for (tag in listOf("category_all", "surprise_drawing", "sheet_page_cat"))
+                    assertNotNull("Album missing " + tag, root.findViewWithTag<View>(tag))
+            }
+            clickTag(scenario, "sheet_page_cat")
+            awaitTag(scenario, "screen_paint")
+            awaitTag(scenario, "paint_tools")
+            scenario.onActivity { activity ->
+                val root = activity.window.decorView
+                val save = root.findViewWithTag<View>("save")
+                val canvas = root.findViewWithTag<View>("paint_canvas")
+                assertNotNull(save)
+                assertNotNull(canvas)
+                assertNotNull(root.findViewWithTag<View>("album_back"))
+                assertTrue(save.isEnabled)
+                for (color in Palette.colors.keys)
+                    assertNotNull("Color " + color, root.findViewWithTag<View>("paint_" + color))
+            }
+            clickTag(scenario, "album_back")
+            awaitTag(scenario, "screen_album")
+            clickTag(scenario, "home")
+            clickTag(scenario, "play")
+            awaitTag(scenario, "screen_play")
+            awaitTag(scenario, "storybook_header")
+            clickTag(scenario, "home")
+            clickTag(scenario, "learn")
+            awaitTag(scenario, "screen_learn")
+            awaitTag(scenario, "storybook_header")
+            clickTag(scenario, "home")
+            clickTag(scenario, "gallery")
+            awaitTag(scenario, "screen_gallery")
+            awaitTag(scenario, "storybook_header")
+        }
+    }
+
+    @Test
     fun illustratedHomeKeepsActivitiesAccessible() {
         configure()
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
