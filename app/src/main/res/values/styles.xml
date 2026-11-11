@@ -3,7 +3,7 @@
         <item name="android:fontFamily">sans-serif-rounded</item>
         <item name="android:colorAccent">#34715C</item>
         <item name="android:windowLightStatusBar">true</item>
-        <item name="android:statusBarColor">#FFF8EC</item>
+        <item name="android:statusBarColor">#FFFAF2</item>
         <item name="android:navigationBarColor">#FFF8EC</item>
         <item name="android:windowActionModeOverlay">true</item>
         <item name="android:windowBackground">#FFF8EC</item>
