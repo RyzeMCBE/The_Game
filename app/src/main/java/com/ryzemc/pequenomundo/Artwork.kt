@@ -5,15 +5,19 @@ import android.graphics.*
 import android.view.View
 import kotlin.math.min
 
+/** Shared storybook colors: warm paper, playful accents, and readable navy text. */
 object Palette {
-    val background = Color.rgb(255, 248, 236)
-    val ink = Color.rgb(36, 61, 89)
-    val muted = Color.rgb(83, 105, 98)
+    val background = Color.rgb(255, 250, 242)
+    val ink = Color.rgb(46, 58, 88)
+    val muted = Color.rgb(94, 104, 122)
     val green = Color.rgb(52, 113, 92)
-    val mint = Color.rgb(219, 238, 218)
-    val peach = Color.rgb(255, 224, 194)
-    val lilac = Color.rgb(231, 221, 249)
-    val sky = Color.rgb(222, 240, 245)
+    val mint = Color.rgb(219, 243, 213)
+    val peach = Color.rgb(255, 222, 202)
+    val lilac = Color.rgb(234, 221, 255)
+    val sky = Color.rgb(219, 241, 255)
+    val butter = Color.rgb(255, 239, 172)
+    val paper = Color.rgb(255, 255, 251)
+    val outline = Color.rgb(213, 218, 229)
     val colors =
         linkedMapOf(
             "red" to Color.rgb(230, 101, 91),
@@ -248,41 +252,54 @@ object Artwork {
                 circle(57f, 76f, 1.5f, Palette.ink)
             }
             id == "paint" -> {
-                oval(7f, 15f, 83f, 66f, color("#E5B57C"))
-                oval(65f, 43f, 18f, 18f, Palette.background)
-                circle(27f, 34f, 9f, Palette.colors.getValue("red"))
-                circle(49f, 28f, 9f, Palette.colors.getValue("yellow"))
-                circle(65f, 36f, 8f, Palette.colors.getValue("blue"))
-                circle(26f, 59f, 8f, Palette.colors.getValue("green"))
-                line(83f, 28f, 46f, 80f, Palette.colors.getValue("brown"), 7f)
-                oval(35f, 74f, 16f, 20f, Palette.colors.getValue("purple"))
+                // Painter's palette with soft layered relief, lively color dabs and brush.
+                oval(4f, 17f, 90f, 68f, color("#A96C40"))
+                oval(6f, 12f, 87f, 68f, color("#F6C990"))
+                oval(13f, 17f, 73f, 55f, color("#FFDEAC"))
+                oval(64f, 42f, 20f, 18f, Palette.paper)
+                circle(27f, 37f, 10f, color("#F86C85"))
+                circle(49f, 27f, 10f, color("#FFD65E"))
+                circle(69f, 34f, 9f, color("#68B7EA"))
+                circle(29f, 59f, 9f, color("#77C999"))
+                circle(46f, 51f, 7f, color("#AD89EA"))
+                circle(24f, 33f, 3f, color("#FFC7D2"))
+                circle(45f, 23f, 3f, color("#FFF5BA"))
+                line(88f, 16f, 61f, 79f, color("#81564C"), 8f)
+                line(88f, 16f, 61f, 79f, color("#D3A376"), 4f)
+                oval(56f, 73f, 12f, 17f, color("#A979D8"))
+                oval(58f, 72f, 6f, 7f, color("#E9C9F4"))
             }
             id == "play" -> {
-                box(7f, 54f, 38f, 37f, 7f, Palette.colors.getValue("blue"))
-                circle(69f, 71f, 20f, Palette.colors.getValue("red"))
-                polygon(
-                    floatArrayOf(47f, 5f, 21f, 45f, 73f, 45f),
-                    Palette.colors.getValue("yellow"),
-                )
+                // Friendly toy shapes with highlights rather than flat square icons.
+                box(5f, 48f, 47f, 43f, 15f, color("#3E79C2"))
+                box(8f, 45f, 43f, 42f, 14f, color("#77B8F6"))
+                box(15f, 51f, 27f, 10f, 5f, color("#BFE4FF"))
+                circle(72f, 67f, 23f, color("#B95478"))
+                circle(70f, 63f, 22f, color("#F985A4"))
+                circle(63f, 55f, 7f, color("#FFBCD1"))
+                polygon(floatArrayOf(46f, 5f, 15f, 49f, 78f, 49f), color("#EAA64E"))
+                polygon(floatArrayOf(46f, 2f, 17f, 43f, 75f, 43f), color("#FFE083"))
+                polygon(floatArrayOf(45f, 12f, 36f, 27f, 55f, 27f), color("#FFF2BF"))
             }
             id == "rainbow" -> {
                 p.style = Paint.Style.STROKE
-                p.strokeWidth = 12f
+                p.strokeWidth = 11f
                 p.strokeCap = Paint.Cap.ROUND
-                listOf("red", "yellow", "green", "blue").forEachIndexed { index, k ->
+                listOf("red", "orange", "yellow", "green", "blue").forEachIndexed { index, k ->
                     p.color = Palette.colors.getValue(k)
-                    val inset = 10f + index * 12
+                    val inset = 8f + index * 10f
                     c.drawArc(
-                        RectF(inset, 10f + index * 12, 100f - inset, 100f - index * 12),
-                        180f,
-                        180f,
-                        false,
-                        p,
+                        RectF(inset, 8f + index * 10f, 100f - inset, 102f - index * 10f),
+                        184f, 172f, false, p,
                     )
                 }
                 p.style = Paint.Style.FILL
-                oval(1f, 51f, 36f, 25f, Color.WHITE)
-                oval(64f, 51f, 36f, 25f, Color.WHITE)
+                oval(0f, 56f, 38f, 25f, Color.WHITE)
+                circle(14f, 55f, 15f, Color.WHITE)
+                oval(61f, 56f, 39f, 25f, Color.WHITE)
+                circle(85f, 56f, 14f, Color.WHITE)
+                circle(83f, 8f, 4f, color("#FFDB74"))
+                circle(7f, 30f, 3f, color("#FFA3C8"))
             }
             id == "star" -> {
                 val points = FloatArray(20)
