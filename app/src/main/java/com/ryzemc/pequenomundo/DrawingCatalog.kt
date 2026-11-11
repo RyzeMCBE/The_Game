@@ -12,6 +12,7 @@ data class VectorLayer(
     val region: Boolean,
     val width: Float,
     val ink: Boolean,
+    val decoration: Boolean = false,
 )
 
 class ColoringSheet(
@@ -52,7 +53,8 @@ class ColoringSheet(
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         Canvas(bitmap).let { canvas ->
             canvas.drawColor(Color.WHITE)
-            draw(canvas, RectF(0f, 0f, 600f, 450f))
+            // Decorative flourishes must never renumber an older saved paint region.
+            draw(canvas, RectF(0f, 0f, 600f, 450f), decorations = false)
         }
         val pixels = IntArray(width * height)
         bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
@@ -208,7 +210,13 @@ class ColoringSheet(
         c.restore()
     }
 
-    fun draw(canvas: Canvas, bounds: RectF, colored: Boolean = false, shadow: Boolean = false) {
+    fun draw(
+        canvas: Canvas,
+        bounds: RectF,
+        colored: Boolean = false,
+        shadow: Boolean = false,
+        decorations: Boolean = true,
+    ) {
         val scale = min(bounds.width() / 600f, bounds.height() / 450f)
         canvas.save()
         canvas.translate(bounds.centerX() - 300f * scale, bounds.centerY() - 225f * scale)
@@ -219,6 +227,7 @@ class ColoringSheet(
         }
         if (colored && !shadow) drawBackdrop(canvas, brush)
         for (layer in layers) {
+            if (!decorations && layer.decoration) continue
             brush.shader = null
             brush.color =
                 if (shadow) Palette.ink
@@ -301,6 +310,7 @@ object DrawingCatalog {
                             layer.getBoolean("region"),
                             layer.getDouble("width").toFloat(),
                             layer.getBoolean("ink"),
+                            layer.optBoolean("decoration", false),
                         )
                     },
                 )
