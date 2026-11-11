@@ -1322,7 +1322,8 @@ class MainActivity : Activity() {
             }.apply { textSize = 15f; contentDescription = "Terminar y guardar mi pintura" },
             LinearLayout.LayoutParams(dp(106), dp(48)),
         )
-        body.addFull(heading, 56)
+        // Reserve extra vertical inset so the top completion button never clips in landscape.
+        body.addFull(heading, 64)
         body.gap(7)
         val canvas =
             PaintCanvasView(this, painting!!).apply {
