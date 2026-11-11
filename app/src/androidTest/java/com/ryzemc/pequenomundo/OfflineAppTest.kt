@@ -3,7 +3,10 @@ package com.ryzemc.pequenomundo
 import android.content.Context
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.RectF
 import android.media.MediaMetadataRetriever
 import android.os.SystemClock
 import android.view.MotionEvent
@@ -208,6 +211,35 @@ class OfflineAppTest {
             clickTag(scenario, "gallery")
             awaitTag(scenario, "screen_gallery")
             awaitTag(scenario, "storybook_header")
+        }
+    }
+
+    @Test
+    fun allTwoHundredIllustrationsHaveColorfulPreviewsAndSafePaintRegions() {
+        DrawingCatalog.load(context)
+        assertEquals(200, DrawingCatalog.pages.size)
+        val image = Bitmap.createBitmap(240, 180, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(image)
+        val bounds = RectF(0f, 0f, 240f, 180f)
+        for (sheet in DrawingCatalog.pages) {
+            assertEquals(10, sheet.layers.count { it.decoration })
+            assertTrue(sheet.layers.filter { it.decoration }.none { it.region || it.ink })
+            assertEquals(sheet.layers.count { it.region }, sheet.regions.size)
+            canvas.drawColor(Color.WHITE)
+            sheet.draw(canvas, bounds, colored = true)
+            val previewPixel = image.getPixel(12, 12)
+            canvas.drawColor(Color.WHITE)
+            sheet.draw(canvas, bounds, colored = false)
+            assertNotEquals("Illustrated cover missing for " + sheet.id,
+                image.getPixel(12, 12), previewPixel)
+        }
+        image.recycle()
+        // Region splitting is computed without decorative ink, so old marks remain valid.
+        for (id in listOf("page_bear", "page_penguin", "page_car",
+            "page_tree", "page_apple", "page_robot")) {
+            val sheet = DrawingCatalog.find(id)
+            assertNotNull(sheet)
+            assertTrue("Missing paintable area for " + id, sheet!!.hitRegions.isNotEmpty())
         }
     }
 
