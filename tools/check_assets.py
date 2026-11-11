@@ -6,6 +6,7 @@ from pathlib import Path
 import wave
 import xml.etree.ElementTree as ET
 import zipfile
+from enrich_drawings import flourishes, STYLE
 
 ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ROOT / "app/src/main/assets"
@@ -33,10 +34,11 @@ catalog = json.loads((ASSETS / "drawings/catalog.json").read_text())
 pages = catalog["pages"]
 assert catalog["width"]==600 and catalog["height"]==450
 assert len(pages)==200 and len({p["id"] for p in pages})==200
-assert catalog.get("artStyle") == "storybook_illustrated_v2", "The completed visual catalog must be bundled"
+assert catalog.get("artStyle") == STYLE, "The completed visual catalog must be bundled"
 assert all(len(page["layers"]) >= 10 for page in pages), "No bare, unfinished drawings"
 assert all(sum(layer.get("decoration", False) for layer in page["layers"]) == 10 for page in pages), "Every illustration requires ten distinct added ink details"
 assert all(not layer["region"] and not layer["ink"] for page in pages for layer in page["layers"] if layer.get("decoration")), "New art must never shift existing paintable regions"
+assert all(page["layers"][-10:] == flourishes(page) for page in pages), "Checked-in artwork must exactly match reproducible ink details"
 assert len({p["name"] for p in pages})==200
 assert {c:sum(p["category"]==c for p in pages) for c in {p["category"] for p in pages}} == {"animals":40,"dinosaurs":30,"vehicles":30,"nature":30,"food":30,"objects":40}
 assert len({json.dumps([(s["d"],s["region"],s["ink"]) for s in p["layers"]]) for p in pages})==200, "Distinct geometry, not recolored copies"
