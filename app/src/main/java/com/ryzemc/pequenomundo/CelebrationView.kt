@@ -81,6 +81,30 @@ class CelebrationView(context: Context) : View(context) {
         val h = height.toFloat()
         if (w <= 0 || h <= 0) return
         val t = progress
+        // Soft storybook scenery: the star sits in a magical garden instead of blank space.
+        paint.shader = LinearGradient(
+            0f, 0f, 0f, h,
+            intArrayOf(0xffe2f5ff.toInt(), Palette.background, 0xffffead6.toInt()),
+            floatArrayOf(0f, .57f, 1f),
+            Shader.TileMode.CLAMP,
+        )
+        canvas.drawRect(0f, 0f, w, h, paint)
+        paint.shader = null
+        paint.color = 0x99ffffff.toInt()
+        for ((x,y) in listOf(.18f to .18f, .85f to .42f)) {
+            canvas.drawOval(w*(x-.16f), h*y, w*(x+.16f), h*y+w*.075f, paint)
+            canvas.drawCircle(w*x, h*y, w*.07f, paint)
+        }
+        paint.color = 0x558ccc9d
+        canvas.drawOval(-w*.24f, h*.89f, w*.8f, h*1.12f, paint)
+        paint.color = 0x55ffceaa
+        canvas.drawOval(w*.38f, h*.92f, w*1.2f, h*1.13f, paint)
+        paint.color = 0x88fff0af.toInt()
+        for (i in 0 until 15) {
+            val x = (i * .618034f % 1f) * w
+            val y = h * (.12f + i * .041f % .69f)
+            canvas.drawCircle(x, y, 1.5f * resources.displayMetrics.density, paint)
+        }
         fireworks(canvas, w * .16f, h * .30f, min(w, h) * .19f, t, .10f, 0)
         fireworks(canvas, w * .84f, h * .29f, min(w, h) * .20f, t, .29f, 2)
         fireworks(canvas, w * .50f, h * .20f, min(w, h) * .18f, t, .47f, 4)
