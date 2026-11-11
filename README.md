@@ -2,12 +2,15 @@
 
 Aplicación Android nativa en Kotlin para Noah, de 3 años. Todos los dibujos, voces, sonidos y juegos vienen dentro de la APK: funciona sin conexión desde el primer inicio. No contiene WebView, cuentas, publicidad, servidor ni permisos de red, micrófono o almacenamiento compartido.
 
-## Rediseño visual por etapas
+## Fase 1 — Rediseño visual completo
 
-- **Fase 1 — Interfaces ilustradas (implementada en el PR #1):** Inicio con Milo artista, jardín de cuento, tarjetas de Pintar/Jugar/Aprender, cabeceras y actividades con colores y bordes coherentes, álbum de 200 láminas presentado como estantería ilustrada, estudio de pintura, galería de obras guardadas, escenas de memoria/conteo/formas/animales/rompecabezas/caminos, celebración en jardín y nuevo icono Android. Incluye pruebas de navegación y conserva la lógica del juego y las pinturas existentes.
-- **Pintura:** el botón `¡Listo! ✓` aparece en la barra superior, no debajo del área de dibujo. El gesto de mantener pulsado por 2 segundos se abordará en la fase de controles, junto con la prevención de toques accidentales.
-- **Siguiente fases pendientes:** retirar narraciones y acceso de adultos; mejorar interacciones táctiles; revisar y redibujar las 200 ilustraciones del catálogo hasta cumplir el estilo artístico de referencia; validar nuevamente y generar la APK final firmada. Los dibujos del catálogo siguen siendo los vectores originales mientras no se complete esa revisión.
-- Las pruebas automatizadas comprueban los flujos principales, pero una revisión visual humana de capturas y una prueba en el dispositivo concreto siguen siendo recomendables antes de publicar.
+- **Interfaces:** inicio con Milo artista y jardín de cuento; álbum ilustrado; estudio de pintura con `¡Listo! ✓` arriba del lienzo; menús de juegos, galería, celebración e icono de Android con la misma paleta y contornos.
+- **200 láminas originales:** las vistas del álbum se presentan **a color**, con escenarios distintos por categoría, degradados y reflejos sobre sus formas. Cada dibujo incorpora diez detalles originales de línea adaptados a su categoría y variante. Todo se genera de forma determinista y queda empaquetado dentro de la APK, sin descargar imágenes.
+- **Compatibilidad:** los trazos adicionales se identifican como decoración y se excluyen de la segmentación de zonas para pintar. Los identificadores de las 200 láminas y los contornos originales permanecen intactos, para no alterar los borradores anteriores.
+- **Validación:** `tools/check_assets.py` verifica que las 200 láminas tengan sus detalles reproducibles y que no sean regiones de pintura. Las pruebas Android recorren las 200 vistas ilustradas, el álbum, la galería y el lienzo. La versión de pruebas lleva firma de depuración, no la firma privada de la APK personal.
+- **Siguientes fases independientes:** retirar por completo las voces, música narrada y sección de adultos; proteger botones sensibles contra toques accidentales; validar la experiencia en el dispositivo concreto y generar la entrega personal firmada.
+
+El diseño de personajes es vectorial original y estilizado. Esta fase mejora todas las vistas sin sustituir las siluetas de las láminas: cualquier futura ilustración individual más elaborada podrá revisarse sin rehacer el sistema de pintura.
 
 ## Edición 1.2.0
 
