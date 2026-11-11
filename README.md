@@ -4,8 +4,10 @@ Aplicación Android nativa en Kotlin para Noah, de 3 años. Todos los dibujos, v
 
 ## Rediseño visual por etapas
 
-- **Etapa 1 — Inicio e identidad visual:** Home con Milo ilustrado en un jardín, nueva paleta de cuento, ilustraciones renovadas de pintar/jugar/aprender, tarjetas de actividad grandes y pruebas de navegación. La funcionalidad y las preferencias guardadas se mantienen intactas.
-- **Pendiente:** aplicar el estilo al álbum, lienzo y demás juegos; eliminar voces y acceso de adulto; proteger los controles sensibles y volver a validar la APK final.
+- **Fase 1 — Interfaces ilustradas (implementada en el PR #1):** Inicio con Milo artista, jardín de cuento, tarjetas de Pintar/Jugar/Aprender, cabeceras y actividades con colores y bordes coherentes, álbum de 200 láminas presentado como estantería ilustrada, estudio de pintura, galería de obras guardadas, escenas de memoria/conteo/formas/animales/rompecabezas/caminos, celebración en jardín y nuevo icono Android. Incluye pruebas de navegación y conserva la lógica del juego y las pinturas existentes.
+- **Pintura:** el botón `¡Listo! ✓` aparece en la barra superior, no debajo del área de dibujo. El gesto de mantener pulsado por 2 segundos se abordará en la fase de controles, junto con la prevención de toques accidentales.
+- **Siguiente fases pendientes:** retirar narraciones y acceso de adultos; mejorar interacciones táctiles; revisar y redibujar las 200 ilustraciones del catálogo hasta cumplir el estilo artístico de referencia; validar nuevamente y generar la APK final firmada. Los dibujos del catálogo siguen siendo los vectores originales mientras no se complete esa revisión.
+- Las pruebas automatizadas comprueban los flujos principales, pero una revisión visual humana de capturas y una prueba en el dispositivo concreto siguen siendo recomendables antes de publicar.
 
 ## Edición 1.2.0
 
@@ -13,7 +15,7 @@ Aplicación Android nativa en Kotlin para Noah, de 3 años. Todos los dibujos, v
 - **200 láminas distintas**: 40 animales, 30 dinosaurios y escenas prehistóricas, 30 vehículos, 30 de naturaleza, 30 frutas/alimentos y 40 juguetes/objetos. Cada lámina tiene geometría propia; no son copias recoloreadas.
 - Primero se abre el álbum. Al elegir una hoja, el lienzo ocupa su propia pantalla, con 12 colores, tres grosores, borrador y deshacer. En horizontal las herramientas pasan al lateral.
 - El color sigue el movimiento del dedo. La ayuda recorta cada trazo a la zona donde comienza, incluidas divisiones internas y contornos; para otra parte se levanta el dedo. No se rellena toda la zona con un toque. Las áreas se calculan localmente a partir de los contornos y solo al abrir una hoja.
-- «¡Terminé!» guarda la pintura, muestra la estrella feliz con fuegos artificiales y abre otra lámina. Se conserva también la hoja libre.
+- «¡Listo! ✓» guarda la pintura, muestra la estrella feliz con fuegos artificiales y abre otra lámina. Se conserva también la hoja libre.
 - La selección automática mezcla el catálogo sin repetir hasta recorrer las 200 hojas. Intenta alternar categorías y, en la siguiente vuelta, evita los últimos 20 dibujos mientras haya alternativas. El recorrido se guarda incluso al cerrar la app. Elegir voluntariamente un dibujo conocido en el álbum sigue siendo posible.
 - Borradores por hoja, galería privada y compatibilidad con las pinturas/plantillas anteriores.
 - **Contamos con Milo**, del 1 al 10: contar tocando cada objeto una sola vez, darle a Milo la cantidad de manzanas solicitada y relacionar cantidades con números. Rangos 1–3, 1–5 y 1–10, elegibles o con avance gradual por actividades completadas.
