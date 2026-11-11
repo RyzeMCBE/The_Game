@@ -842,15 +842,26 @@ class MainActivity : Activity() {
                     LinearLayout(this).apply {
                         orientation = LinearLayout.VERTICAL
                         gravity = Gravity.CENTER
-                        setPadding(dp(6), dp(9), dp(6), dp(9))
+                        setPadding(dp(8), dp(10), dp(8), dp(10))
+                        elevation = dp(2).toFloat()
                         tag = "answer_${item.id}"
                         contentDescription = item.label
                     }
                 tile.addView(
-                    ArtView(this, item.art),
-                    LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(104)),
+                    FrameLayout(this).apply {
+                        background = storyPanel(Palette.sky, Palette.paper, 24)
+                        addView(
+                            ArtView(this@MainActivity, item.art),
+                            FrameLayout.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                            ),
+                        )
+                    },
+                    LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(102)),
                 )
-                tile.addFull(text(item.label, 19f, bold = true).apply { gravity = Gravity.CENTER })
+                tile.gap(8)
+                tile.addFull(text(item.label, 17f, bold = true).apply { gravity = Gravity.CENTER })
                 clickable(
                         tile,
                         if (round.completed && item.id == round.target.id) Palette.mint
@@ -912,11 +923,12 @@ class MainActivity : Activity() {
                     art = if (visible) game.cards[index] else "star"
                     invalidate()
                 }
-                tile.background =
-                    rounded(
-                        if (index in game.matched) Palette.mint
-                        else if (visible) Color.WHITE else Palette.lilac
-                    )
+                tile.background = storyPanel(
+                    if (index in game.matched) Palette.mint
+                    else if (visible) Palette.paper else Palette.lilac,
+                    Palette.paper,
+                    28,
+                )
                 tile.contentDescription =
                     if (visible)
                         "${GameContent.animals.first {it.art==game.cards[index]}.label}, tarjeta ${index+1}"
@@ -945,6 +957,8 @@ class MainActivity : Activity() {
                             gravity = Gravity.CENTER
                             orientation = LinearLayout.VERTICAL
                             tag = "memory_$index"
+                            setPadding(dp(7), dp(7), dp(7), dp(7))
+                            elevation = dp(2).toFloat()
                             addView(
                                 ArtView(this@MainActivity, "star"),
                                 LinearLayout.LayoutParams(
@@ -1642,6 +1656,9 @@ class MainActivity : Activity() {
                     store.record("paths")
                     celebrate(GameActivity.PATHS)
                 }
+            }.apply {
+                background = storyPanel(Palette.sky, Palette.paper, 28)
+                elevation = dp(2).toFloat()
             }
         )
         body.gap()
@@ -1664,11 +1681,23 @@ class MainActivity : Activity() {
                         gravity = Gravity.CENTER
                         tag = "explore_${item.id}"
                         contentDescription = "Escuchar ${item.label}"
-                        addFull(ArtView(this@MainActivity, item.art), 90)
                         addFull(
-                            text(item.label, 17f, bold = true).apply { gravity = Gravity.CENTER }
+                            FrameLayout(this@MainActivity).apply {
+                                background = storyPanel(Palette.sky, Palette.paper, 24)
+                                addView(ArtView(this@MainActivity, item.art),
+                                    FrameLayout.LayoutParams(
+                                        ViewGroup.LayoutParams.MATCH_PARENT,
+                                        ViewGroup.LayoutParams.MATCH_PARENT,
+                                    ))
+                            },
+                            90,
                         )
-                        clickable(this, Color.WHITE) { audio.say(item.voice, "sound_${item.id}") }
+                        gap(5)
+                        addFull(
+                            text(item.label, 16f, bold = true).apply { gravity = Gravity.CENTER }
+                        )
+                        elevation = dp(2).toFloat()
+                        clickable(this, Palette.paper) { audio.say(item.voice, "sound_${item.id}") }
                     }
                 }
             body.addFull(columns(cards), 137)
